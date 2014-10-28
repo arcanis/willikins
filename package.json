@@ -1,0 +1,23 @@
+{
+    "name": "willikins",
+    "description": "node web framework",
+    "version": "0.0.1",
+
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/arcanis/willikins"
+    },
+
+    "bin": {
+        "willikins": "./bin/willikins"
+    },
+
+    "dependencies": {
+        "cli-color": "^0.3.2",
+        "express": "^4.10.0",
+        "request": "^2.47.0",
+        "sequelize": "^2.0.0-rc2",
+        "sqlite3": "^3.0.2",
+        "systemjs": "^0.9.3"
+    }
+}

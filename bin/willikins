@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+NODE_PATH="$(npm root):${NODE_PATH}" node ${DIR}/../sources/_setup "$@"
