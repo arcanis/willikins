@@ -10,6 +10,8 @@ System.paths[ 'willikins/*' ] = __dirname + '/*.js';
 System.paths[ 'vendors/*' ] = Path.join( Path.resolve( '.' ), 'vendors', '*.js' );
 System.paths[ 'app/*' ] = Path.join( Path.resolve( '.' ), 'sources', '*.js' );
 
+GLOBAL.__appdir = Path.join( Path.resolve( '.' ), 'sources' );
+
 GLOBAL.errlog = function ( error ) {
 
     if ( error instanceof Error ) {
