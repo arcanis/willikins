@@ -117,6 +117,12 @@ class Bag extends Array {
 
     }
 
+    close( ) {
+
+        this._valueCount = 0;
+
+    }
+
     validate( { ignoreRequired = false } = { } ) {
 
         for ( var name of Object.keys( this._options ) ) {
@@ -240,7 +246,7 @@ export class CommandSet {
 
     }
 
-    run( argv ) {
+    async run( argv ) {
 
         var bag = new Bag( );
         var index = 0;
@@ -271,14 +277,20 @@ export class CommandSet {
 
         bag.addOptions( command._options );
 
-        for ( ; index < argv.length; ++ index )
+        for ( ; index < argv.length && argv[ index ] !== '--'; ++ index )
             this._parseArgument( bag, argv[ index ] );
+
+        bag.close( );
+
+        if ( argv[ index ] === '--' )
+            for ( index += 1; index < argv.length; ++ index )
+                bag.push( argv[ index ] );
 
         bag.validate( );
 
         // And finally run !
 
-        return command._runner( bag );
+        return await command._runner( bag );
 
     }
 

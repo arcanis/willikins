@@ -135,35 +135,3 @@ export function middleware( fn ) {
     }
 
 }
-
-export function csrfGeneration( ) {
-
-    return function ( request, response, next ) {
-
-        if ( ! request.session.csrfToken )
-            csrfGeneration.reset( request );
-
-        next( );
-
-    };
-
-}
-
-csrfGeneration.reset = function ( request ) {
-
-    var token = md5( Math.random( ) );
-
-    request.session.csrfToken = token;
-    request.cookies.csrfToken = token;
-
-    return token;
-
-};
-
-export function csrfValidation( ) {
-
-    return middleware( async function ( request, response, next ) {
-
-    } );
-
-}

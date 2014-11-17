@@ -1,8 +1,11 @@
-import { getProfile } from 'willikins/profile';
+import { stringify as stringifyQueryString } from 'willikins/vendors/qs';
+import { getProfile }                        from 'willikins/profile';
 
 var clr = require( 'cli-color' );
 
 var gTestSuite = null;
+
+var gQueryParameters = null;
 
 class TestSuite {
 
@@ -19,6 +22,9 @@ class TestSuite {
 
         var name = this.name;
         var succeed = true;
+
+        // Reset the global query parameters
+        gQueryParameters = { };
 
         for ( var initfn of this.inits )
             await initfn( );
@@ -128,6 +134,8 @@ function craftUrl( url ) {
     if ( url.indexOf( ':' ) === -1 )
         url = `http://localhost:${HTTP_PORT}${url}`;
 
+    url += '?' + stringifyQueryString( gQueryParameters );
+
     return url;
 
 }
@@ -141,6 +149,20 @@ function parseResponse( type, body ) {
         return JSON.parse( body );
 
     return body;
+
+}
+
+export function registerQueryParameter( name, value ) {
+
+    if ( value == null ) {
+
+        delete gQueryParameters[ value ];
+
+    } else {
+
+        gQueryParameters[ name ] = value;
+
+    }
 
 }
 

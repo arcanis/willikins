@@ -42,27 +42,51 @@ export class Database {
 
     }
 
-    static async instance( ) {
+    static async _setup( ) {
 
-        if ( this._instance )
-            return this._instance;
-
-        var profile = getProfile( );
+        if ( this._setupLock )
+            throw new Error( 'Cannot setup multiple database contexts' );
 
         var { DB_NAME, DB_USER, DB_PASS, DB_DIALECT, DB_STORAGE, LOGS_SQL } = getProfile( );
 
-        this._instance = new Sequelize( DB_NAME, DB_USER, DB_PASS, {
+        var sequelize = new Sequelize( DB_NAME, DB_USER, DB_PASS, {
             logging : makeLogger( LOGS_SQL ),
             dialect : DB_DIALECT,
             storage : DB_STORAGE
         } );
 
-        for ( var path of await getProjectModules( 'models' ) ) {
+        var paths = await getProjectModules( 'models' );
+        var models = [ ];
+
+        for ( var path of paths ) {
             var module = await System.import( path );
-            await module[ basename( path ) ].instance( );
+            models.push( module[ basename( path ) ] );
         }
 
-        return this._instance;
+        for ( var model of models )
+            await model.register( sequelize );
+
+        for ( var model of models )
+            await model.link( );
+
+        return sequelize;
+
+    }
+
+    static async instance( ) {
+
+        if ( ! this._instancePromise )
+            this._instancePromise = this._setup( );
+
+        return await this._instancePromise;
+
+    }
+
+    static async define( ... argv ) {
+
+        var db = await this.sequelize( );
+
+        return db.define( ... argv );
 
     }
 
@@ -82,14 +106,6 @@ export class Database {
 
     }
 
-    static async define( ... argv ) {
-
-        var db = await this.instance( );
-
-        return db.define( ... argv );
-
-    }
-
 }
 
 export class Model {
@@ -100,21 +116,38 @@ export class Model {
 
     }
 
+    static schema( ) {
+
+        throw new Error( 'The model schema is missing' );
+
+    }
+
     static relations( ) { return [
 
     ] }
 
-    static async instance( ) {
-
-        if ( this._instance )
-            return this._instance;
+    static async register( sequelize ) {
 
         var schema = this.schema( );
 
-        this._instance = await Database.define( schema.name, schema.fields, schema.options );
+        this._instance = await sequelize.define( schema.name, schema.fields, schema.options );
 
-        for ( var relation of this.relations( ) )
+    }
+
+    static async link( ) {
+
+        var relations = this.relations( );
+
+        for ( var relation of relations ) {
             await applyRelation( this._instance, relation );
+        }
+
+    }
+
+    static async instance( ) {
+
+        if ( ! this._instance )
+            await Database.instance( );
 
         return this._instance;
 

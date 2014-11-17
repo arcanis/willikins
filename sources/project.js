@@ -1,5 +1,5 @@
-import { join as joinPaths, dirname, basename } from 'willikins/node/path';
-import { readdir }                              from 'willikins/node/fs';
+import { relative as relativePath, join as joinPaths, dirname, basename } from 'willikins/node/path';
+import { readdir }                                                        from 'willikins/node/fs';
 
 async function getFolderFiles( path ) {
 
@@ -52,5 +52,14 @@ export async function getProjectModules( path ) {
         modules = modules.concat( await getFolderModules( joinPaths( projectPath, path ) ) );
 
     return modules;
+
+}
+
+export async function importExternal( path ) {
+
+    var relativeProfilePath = relativePath( System.baseURL, joinPaths( dirname( path ), basename( path, '.js' ) ) );
+    var module = await System.import( relativeProfilePath );
+
+    return module;
 
 }

@@ -14,6 +14,8 @@ export function controller( fn, { json = false } = { } ) {
 
         } catch ( error ) {
 
+            console.log( 'hum', error );
+
             if ( error instanceof HttpError ) {
 
                 status = error.status;
@@ -41,7 +43,7 @@ export function controller( fn, { json = false } = { } ) {
 
         } else {
 
-            response.end( data );
+            response.send( data );
 
         }
 

@@ -1,18 +1,17 @@
-import { basename, dirname, relative as relativePath, join as joinPaths } from 'willikins/node/path';
-import { CommandSet }                                                     from 'willikins/cli';
-import { setProfile }                                                     from 'willikins/profile';
-import { addPathToProject, getProjectModules }                            from 'willikins/project';
+import { basename }                                            from 'willikins/node/path';
+import { CommandSet }                                          from 'willikins/cli';
+import { setProfile }                                          from 'willikins/profile';
+import { addPathToProject, getProjectModules, importExternal } from 'willikins/project';
 
 function wrapCommand( command ) {
 
     return async function ( options ) {
 
-        var relativeProfilePath = relativePath( System.baseURL, joinPaths( dirname( options.profile ), basename( options.profile, '.js' ) ) );
-        var profile = await System.import( relativeProfilePath );
+        var profile = await importExternal( options.profile );
 
         setProfile( profile );
 
-        return command( options );
+        return await command( options );
 
     };
 
@@ -50,6 +49,6 @@ export default async function( ) {
 
     }
 
-    return commandSet.run( process.argv.slice( 2 ) );
+    return await commandSet.run( process.argv.slice( 2 ) );
 
 }
