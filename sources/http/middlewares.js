@@ -59,7 +59,7 @@ export function model( Model, actions, { identifier = 'id' } = { } ) {
 
             return { status : 200, data };
 
-        }, { json : true } ) )
+        } ) )
 
         .post( '/', databaseController( async function ( request, response ) {
 
@@ -67,7 +67,7 @@ export function model( Model, actions, { identifier = 'id' } = { } ) {
 
             return { status : 201, data : await actions.fetch( request, model ) };
 
-        }, { json : true } ) )
+        } ) )
 
         .get( '/:id', databaseController( async function ( request, response ) {
 
@@ -78,7 +78,7 @@ export function model( Model, actions, { identifier = 'id' } = { } ) {
 
             return { status : 200, data : await actions.fetch( request, model ) };
 
-        }, { json : true } ) )
+        } ) )
 
         .patch( '/:id', databaseController( async function ( request, response ) {
 
@@ -91,7 +91,7 @@ export function model( Model, actions, { identifier = 'id' } = { } ) {
 
             return { status : 200, data : await actions.fetch( request, model ) };
 
-        }, { json : true } ) )
+        } ) )
 
         .delete( '/:id', databaseController( async function ( request, response ) {
 
@@ -104,7 +104,29 @@ export function model( Model, actions, { identifier = 'id' } = { } ) {
 
             return { status : 200, data : { } };
 
-        }, { json : true } ) )
+        } ) )
+
+        .all( '/:id/:action', databaseController( async function ( request, response ) {
+
+            var method = request.method.toLowerCase( );
+            var camelcase = request.params.action.replace( /(?:^|-)([a-z])/g, ( all, letter ) => letter.toUpperCase( ) );
+
+            var normalized = method + camelcase;
+
+            if ( [ 'get', 'post', 'patch', 'delete' ].indexOf( method ) === -1 )
+                throw new AccessDenied( );
+
+            if ( ! normalized in actions || normalized in Object.prototype )
+                throw new AccessDenied( );
+
+            var model = await Model.find( { where : { [identifier] : request.params.id } } );
+
+            if ( ! model )
+                throw new AccessDenied( );
+
+            return await actions[ normalized ]( request, model );
+
+        } ) )
 
      ;
 

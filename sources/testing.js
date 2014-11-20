@@ -1,4 +1,5 @@
 import { stringify as stringifyQueryString } from 'willikins/vendors/qs';
+import { Database }                          from 'willikins/db';
 import { getProfile }                        from 'willikins/profile';
 
 var clr = require( 'cli-color' );
@@ -26,17 +27,24 @@ class TestSuite {
         // Reset the global query parameters
         gQueryParameters = { };
 
-        for ( var initfn of this.inits )
-            await initfn( );
-
         for ( var [ description, runner ] of this.tests ) {
 
             var error = null;
 
+            await Database.drop( );
+            await Database.sync( );
+
             try {
+
+                for ( var initfn of this.inits )
+                    await initfn( );
+
                 await runner( );
+
             } catch ( catched ) {
+
                 error = catched;
+
             }
 
             if ( ! error ) {

@@ -2,19 +2,17 @@ import { UniqueConstraintError }         from 'willikins/vendors/sequelize';
 
 import { ConflictingRequest, HttpError } from 'willikins/http/errors';
 
-export function controller( fn, { json = false } = { } ) {
+export function controller( fn ) {
 
     return async function ( request, response ) {
 
-        var status, data;
+        var status, contentType, data;
 
         try {
 
-            var { status, data } = await fn( request, response );
+            var { status, contentType, data } = await fn( request, response );
 
         } catch ( error ) {
-
-            console.log( 'hum', error );
 
             if ( error instanceof HttpError ) {
 
@@ -35,17 +33,11 @@ export function controller( fn, { json = false } = { } ) {
 
         }
 
+        if ( contentType )
+            response.header( 'Content-Type', contentType );
+
         response.status( status );
-
-        if ( json ) {
-
-            response.json( data );
-
-        } else {
-
-            response.send( data );
-
-        }
+        response.send( data );
 
     };
 
