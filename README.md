@@ -19,11 +19,17 @@ Willikins is opiniated, and expects a particular file structure for your applica
 
 ### `willikins run`
 
-Run the local webserver.
+Run the local webserver and wait for incoming requests.
 
 ### `willikins syncdb`
 
 Setup the database. Iterates on each model, and creates the table if it doesn't exists.
+
+### `willikins tests [-k/--stacks]`
+
+Run all the tests.
+
+If you specify the `--stacks` option, each exception thrown will print the full stacktrace. Otherwise, only a short message will be printed.
 
 ### `willikins exec <path>`
 
@@ -56,3 +62,23 @@ Note that every command located into the `commands` directory will be available 
     $> willikins exec /home/mael/downloads/super-command.js -- --hello --world
 
 Omitting the `--` wouldn't work, because the 'hello' and 'world' options would then be applied to the `exec` command rather than `my-super-command`.
+
+## Pro Tips
+
+### How can I bind my server on the 80 port? Do I have to run Willikins as super user?
+
+Please don't use `sudo` (Willikins won't let you do that anyway).
+
+Instead, you can use `authbind`:
+
+```
+$> touch /etc/authbind/byport/80
+$> sudo chown $USER:root /etc/authbind/byport/80
+$> sudo chmod 755 /etc/authbind/byport/80
+```
+
+You can know launch Willikins by using the following command:
+
+```
+$> authbind --deep willikins --profile prod.js run
+```

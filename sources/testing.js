@@ -8,6 +8,12 @@ var gTestSuite = null;
 
 var gQueryParameters = null;
 
+function reindent( indent, string ) {
+
+    return string.replace( /(^|\n)/g, '$1' + indent );
+
+}
+
 class TestSuite {
 
     constructor( name ) {
@@ -19,7 +25,7 @@ class TestSuite {
 
     }
 
-    async run( { } = { } ) {
+    async run( { showStack = false } = { } ) {
 
         var name = this.name;
         var succeed = true;
@@ -54,7 +60,12 @@ class TestSuite {
             } else {
 
                 process.stdout.write( clr.red(   `  ✗ ${name} ${description}\n` ) );
-                process.stdout.write( clr.red(   `        ${error}\n` ) );
+
+                if ( showStack ) {
+                    process.stdout.write( clr.red(   `\n${reindent('        ', error.stack)}\n\n` ) );
+                } else {
+                    process.stdout.write( clr.red(   `        ${error}\n` ) );
+                }
 
                 succeed = false;
 

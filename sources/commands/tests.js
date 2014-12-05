@@ -9,6 +9,11 @@ export var options = [
     {
         definition : '-o,--only COMPONENTS ...',
         help : 'Only run specified components tests'
+    },
+
+    {
+        definition : '-k,--stacks',
+        help : 'Display the full error stacks when errors happen'
     }
 
 ];
@@ -33,7 +38,7 @@ export async function command( options ) {
         await Database.drop( );
         await Database.sync( );
 
-        if ( ! await module.testSuite.run( ) ) {
+        if ( ! await module.testSuite.run( { showStack : options.stacks } ) ) {
             succeed = false;
         }
 

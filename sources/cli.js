@@ -24,7 +24,7 @@ class Bag extends Array {
 
         for ( var attributes of options ) {
 
-            var match = attributes.definition.match( /^(?:-([^=]),\s*)?--([^=]+)\s+([^\s]+)?(?:\s+...)?$/ );
+            var match = attributes.definition.match( /^(?:-([^=]),\s*)?--([a-z0-9:-]+)(?:\s+([A-Z0-9:_]+)?(?:\s+...)?)?$/ );
 
             if ( ! match )
                 throw new InvalidDefinitionError( attributes.definition );
@@ -54,7 +54,7 @@ class Bag extends Array {
                 option.minValueCount = option.maxValueCount = attributes.valueCount;
 
             if ( typeof option.type === 'undefined' )
-                option.type = 'string';
+                option.type = typeof option.parameter === 'undefined' ? 'boolean' : 'string';
 
             if ( typeof option.minValueCount === 'undefined' )
                 option.minValueCount = parameter && ! ellipsis ? 1 : 0;
@@ -175,6 +175,7 @@ class Bag extends Array {
                 return value;
 
             case 'boolean':
+                if ( value === null ) return true; // If no parameter, assume true
                 return [ false, 'no', 'false' ].indexOf( value ) === -1 && Number( value ) !== 0;
 
             case 'integer':
