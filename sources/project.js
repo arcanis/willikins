@@ -5,6 +5,9 @@ async function getFolderFiles( path ) {
 
     var directory = dirname( await System.locate( { name : joinPaths( path, 'index' ) } ) );
 
+    if ( directory.indexOf( 'file:' ) === 0 )
+        directory = directory.substr( 5 );
+
     try {
         var files = await readdir( directory );
     } catch ( error ) {
