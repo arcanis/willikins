@@ -47,12 +47,13 @@ export class Database {
         if ( this._setupLock )
             throw new Error( 'Cannot setup multiple database contexts' );
 
-        var { DB_NAME, DB_USER, DB_PASS, DB_DIALECT, DB_STORAGE, LOGS_SQL } = getProfile( );
+        var { DB_NAME, DB_USER, DB_PASS, DB_DIALECT, DB_STORAGE, DB_PORT, LOGS_SQL } = getProfile( );
 
         var sequelize = new Sequelize( DB_NAME, DB_USER, DB_PASS, {
             logging : makeLogger( LOGS_SQL ),
             dialect : DB_DIALECT,
-            storage : DB_STORAGE
+            storage : DB_STORAGE,
+            port : DB_PORT
         } );
 
         var paths = await getProjectModules( 'models' );
@@ -150,6 +151,14 @@ export class Model {
             await Database.instance( );
 
         return this._instance;
+
+    }
+
+    static async sync( ... argv ) {
+
+        var db = await this.instance( );
+
+        return await db.sync( ... argv );
 
     }
 

@@ -12,6 +12,6 @@ export async function command( options ) {
     await Database.instance( );
     await Server.instance( );
 
-    process.stdout.write( 'Server launched\n' );
+    process.stdout.write( 'The server is now running.\n' );
 
 }

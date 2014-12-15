@@ -16,6 +16,7 @@
         "cli-color": "^0.3.2",
         "express": "^4.10.0",
         "request": "^2.47.0",
+        "semver": "^4.1.0",
         "sequelize": "^2.0.0-rc2",
         "sqlite3": "^3.0.2",
         "systemjs": "^0.9.3"

@@ -4,7 +4,7 @@ export var help = 'Synchronize the database to match the application schemas';
 
 export var options = [
 
-    { definition : '-f,--force F', type : 'boolean' }
+    { definition : '-f,--force', type : 'boolean' }
 
 ];
 
