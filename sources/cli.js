@@ -111,7 +111,7 @@ class Bag extends Array {
 
         } else {
 
-            super( argument );
+            super.push( argument );
 
         }
 

@@ -1,8 +1,7 @@
 var Path = require( 'path' );
 var System = require( 'systemjs' );
 
-var traceur = require( 'systemjs/node_modules/es6-module-loader/node_modules/traceur' );
-traceur.options.experimental = true;
+System.traceurOptions = { asyncFunctions : true };
 
 System.baseURL = '/';
 
