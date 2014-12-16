@@ -1,4 +1,4 @@
-var semver = require( 'semver' );
+var semver = module.require( 'semver' );
 
 export var compare = semver.compare;
 export var rcompare = semver.rcompare;
