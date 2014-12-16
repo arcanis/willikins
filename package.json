@@ -1,7 +1,7 @@
 {
     "name": "willikins",
     "description": "node web framework",
-    "version": "0.0.5",
+    "version": "0.0.6",
 
     "repository": {
         "type": "git",
@@ -18,6 +18,6 @@
         "request": "^2.47.0",
         "semver": "^4.1.0",
         "sequelize": "^2.0.0-rc2",
-        "systemjs": "^0.10.2"
+        "systemjs": "arcanis/systemjs"
     }
 }
