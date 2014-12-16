@@ -65,7 +65,7 @@ export async function importExternal( path ) {
     if ( baseURL.indexOf( 'file:' ) === 0 )
         baseURL = baseURL.substr( 5 );
 
-    var relativeProfilePath = relativePath( System.baseURL, joinPaths( dirname( path ), basename( path, '.js' ) ) );
+    var relativeProfilePath = relativePath( baseURL, joinPaths( dirname( path ), basename( path, '.js' ) ) );
     var module = await System.import( relativeProfilePath );
 
     return module;
