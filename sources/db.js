@@ -1,4 +1,5 @@
 import { Sequelize }                      from 'willikins/vendors/sequelize';
+import { merge }                          from 'willikins/vendors/lodash';
 
 import { WriteStream, createWriteStream } from 'willikins/node/fs';
 import { basename }                       from 'willikins/node/path';
@@ -6,6 +7,9 @@ import { getProfile }                     from 'willikins/profile';
 import { getProjectModules }              from 'willikins/project';
 
 async function applyRelation( instance, relation ) {
+
+    if ( relation.hasOwnProperty( 'through' ) && typeof relation.through === 'function' )
+        relation.through = await relation.through.instance( );
 
     if ( relation.hasOwnProperty( 'belongsTo' ) )
         return instance.belongsTo( await relation.belongsTo.instance( ), relation );
@@ -131,7 +135,9 @@ export class Model {
 
         var schema = this.schema( );
 
-        this._instance = await sequelize.define( schema.name, schema.fields, schema.options );
+        this._instance = await sequelize.define( schema.table, schema.fields, merge( {
+            freezeTableName : true
+        }, schema.options ) );
 
     }
 
@@ -191,6 +197,14 @@ export class Model {
         var db = await this.instance( );
 
         return await db.findOrCreate( ... argv );
+
+    }
+
+    static async destroy( ... argv ) {
+
+        var db = await this.instance( );
+
+        return await db.destroy( ... argv );
 
     }
 

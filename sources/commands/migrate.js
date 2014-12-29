@@ -1,9 +1,10 @@
-import { compare, rcompare, eq, lt, gt, maxSatisfying } from 'willikins/vendors/semver';
+import { compare, rcompare, maxSatisfying } from 'willikins/vendors/semver';
+import { lt, lte, gt, gte, eq }             from 'willikins/vendors/semver';
 
-import { Willikins }                                    from 'willikins/models/Willikins';
-import { basename }                                     from 'willikins/node/path';
-import { Database }                                     from 'willikins/db';
-import { getProjectModules }                            from 'willikins/project';
+import { Willikins }                        from 'willikins/models/Willikins';
+import { basename }                         from 'willikins/node/path';
+import { Database }                         from 'willikins/db';
+import { getProjectModules }                from 'willikins/project';
 
 export var help = 'Run every migration until the specified version';
 
@@ -32,17 +33,17 @@ export async function command( options ) {
 
     if ( eq( dbVersion, target ) ) {
         process.stdout.write( 'Already up-to-date.\n' );
-        return ;
+        process.exit( 0 );
     }
 
     if ( gt( dbVersion, target ) && ! options.force ) {
         process.stdout.write( `The database is already set up against ${dbVersion}. Use --force if you really wish to downgrade.\n` );
-        return ;
+        process.exit( 1 );
     }
 
     var goForward = gt( target, dbVersion );
 
-    var filter = goForward ? migration => gt( migration.version, dbVersion ) : version => lt( migration.version, dbVersion );
+    var filter = goForward ? migration => ( gt( migration.version, dbVersion ) && lte( migration.version, target ) ) : migration => ( lte( migration.version, dbVersion ) && gt( migration.version, target ) );
     var comparator = goForward ? ( a, b ) => compare( a.version, b.version ) : ( a, b ) => rcompare( a.version, b.version );
     var method = goForward ? 'up' : 'down';
 
@@ -65,6 +66,7 @@ export async function command( options ) {
     dbVersionEntry.value = target;
     await dbVersionEntry.save( );
 
-    process.stdout.write( `The database has been migrated into ${target}.` );
+    process.stdout.write( `The database has been migrated into ${target}.\n` );
+    process.exit( 0 );
 
 }

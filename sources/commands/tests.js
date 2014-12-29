@@ -25,6 +25,8 @@ export async function command( options ) {
     var tests = await getProjectModules( 'tests' );
     var succeed = true;
 
+    debugger ;
+
     if ( options.only )
         tests = tests.filter( module => options.only.indexOf( basename( module ) ) !== -1 );
 

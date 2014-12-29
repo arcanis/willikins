@@ -59,3 +59,15 @@ export class ConflictingRequest extends HttpError {
     }
 
 }
+
+export class NotFound extends HttpError {
+
+    constructor( ) {
+
+        super( 404, { message : 'Not found' } );
+
+        this.message = this.data.message;
+
+    }
+
+}
