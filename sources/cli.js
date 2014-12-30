@@ -38,7 +38,7 @@ class Bag extends Array {
                 throw new RedefinitionError( full );
 
             if ( abbr && Object.prototype.hasOwnProperty.call( this._options, abbr ) )
-                throw new ReoptionError( abbr );
+                throw new RedefinitionError( abbr );
 
             var option = { };
 

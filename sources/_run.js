@@ -29,7 +29,7 @@ export default async function( ) {
     var commandSet = new CommandSet( );
 
     commandSet.addOption( {
-        definition : '-p,--profile PATH',
+        definition : '--profile PATH',
         required : true
     } );
 

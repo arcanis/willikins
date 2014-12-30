@@ -1,10 +1,10 @@
-import { Sequelize }                      from 'willikins/vendors/sequelize';
-import { merge }                          from 'willikins/vendors/lodash';
+import { Sequelize }         from 'willikins/vendors/sequelize';
+import { merge }             from 'willikins/vendors/lodash';
 
-import { WriteStream, createWriteStream } from 'willikins/node/fs';
-import { basename }                       from 'willikins/node/path';
-import { getProfile }                     from 'willikins/profile';
-import { getProjectModules }              from 'willikins/project';
+import { basename }          from 'willikins/node/path';
+import { getProfile }        from 'willikins/profile';
+import { getProjectModules } from 'willikins/project';
+import { toStream }          from 'willikins/streams';
 
 async function applyRelation( instance, relation ) {
 
@@ -24,17 +24,11 @@ async function applyRelation( instance, relation ) {
 
 }
 
-function makeLogger( target ) {
+function makeLogger( stream ) {
 
-    if ( ! target )
-        return false;
-
-    if ( typeof target === 'function' )
-        return target;
-
-    var stream = target instanceof WriteStream ? createWriteStream( target ) : target;
-
-    return data => { stream.write( data + '\n' ); };
+    return function ( data ) {
+        stream.write( data + '\n' );
+    };
 
 }
 
@@ -54,7 +48,7 @@ export class Database {
         var { DB_NAME, DB_USER, DB_PASS, DB_DIALECT, DB_STORAGE, DB_PORT, LOGS_SQL } = getProfile( );
 
         var sequelize = new Sequelize( DB_NAME, DB_USER, DB_PASS, {
-            logging : makeLogger( LOGS_SQL ),
+            logging : makeLogger( toStream( LOGS_SQL ) ),
             dialect : DB_DIALECT,
             storage : DB_STORAGE,
             port : DB_PORT
