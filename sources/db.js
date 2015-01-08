@@ -162,6 +162,14 @@ export class Model {
 
     }
 
+    static async count( ... argv ) {
+
+        var db = await this.instance( );
+
+        return await db.count( ... argv );
+
+    }
+
     static async findAll( ... argv ) {
 
         var db = await this.instance( );

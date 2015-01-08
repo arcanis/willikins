@@ -5,9 +5,9 @@ System.traceurOptions = { asyncFunctions : true };
 
 System.baseURL = '/';
 
-System.paths[ 'willikins/*' ] = __dirname + '/*.js';
-System.paths[ 'vendors/*' ] = Path.join( Path.resolve( '.' ), 'vendors', '*.js' );
-System.paths[ 'app/*' ] = Path.join( Path.resolve( '.' ), 'sources', '*.js' );
+System.paths[ 'willikins/*' ] = 'file:' + __dirname + '/*.js';
+System.paths[ 'vendors/*' ] = 'file:' + Path.join( Path.resolve( '.' ), 'vendors', '*.js' );
+System.paths[ 'app/*' ] = 'file:' + Path.join( Path.resolve( '.' ), 'sources', '*.js' );
 
 GLOBAL.__appdir = Path.join( Path.resolve( '.' ), 'sources' );
 

@@ -19,7 +19,7 @@ function wrapCommand( command ) {
 
 export default async function( ) {
 
-    if ( process.getuid( ) === 0 || process.getgid( ) === 0 )
+    if ( ( process.getuid && process.getuid( ) ) === 0 || ( process.getgid && process.getgid( ) === 0 ) )
         throw new Error( 'Please don\'t run Willikins as root' );
 
     addPathToProject( 'willikins' );

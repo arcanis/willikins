@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
-DIR="$(dirname "$(readlink -f "$0")")"
+UNIX_SCRIPT=$(tr '\\' '/' <<< "$0")
+UNIX_PATH=$(cd "$(dirname "$UNIX_SCRIPT")" ; pwd -P)
 
-NODE_PATH="$(npm root):${NODE_PATH}" node ${DIR}/../sources/_setup "$@"
+NPM_MODULES=$(npm root)
+NODE_PATH="${NPM_MODULES};:${NPM_MODULES}:;${NODE_PATH}"
+
+export NODE_PATH
+
+node "${UNIX_PATH}"/../sources/_setup "$@"
