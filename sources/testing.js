@@ -1,6 +1,10 @@
-import { stringify as stringifyQueryString } from 'willikins/vendors/qs';
-import { Database }                          from 'willikins/db';
-import { getProfile }                        from 'willikins/profile';
+import { format }       from 'willikins/node/url';
+
+import { merge }        from 'willikins/vendors/lodash';
+import { request, jar } from 'willikins/vendors/request';
+
+import { Database }     from 'willikins/db';
+import { getProfile }   from 'willikins/profile';
 
 var clr = require( 'cli-color' );
 
@@ -79,16 +83,6 @@ class TestSuite {
 
 }
 
-function parseJson( body ) {
-
-    try {
-        return JSON.parse( body );
-    } catch ( error ) {
-        throw new Error( `Invalid JSON data ${JSON.stringify(body)}` );
-    }
-
-}
-
 export function describe( component, builder ) {
 
     var testSuite = new TestSuite( component );
@@ -119,100 +113,122 @@ export function it( description, runner ) {
 
 }
 
-function request( options ) {
+export function GET( url, parameters ) {
 
-    return new Promise( ( resolve, reject ) => {
+    return new RequestBag( ).GET( url, parameters );
 
-        require( 'request' )( options, ( error, response, body ) => {
+}
 
-            if ( error ) {
+export function POST( url, parameters ) {
 
-                reject( error );
+    return new RequestBag( ).POST( url, parameters );
 
-            } else if ( response.statusCode >= 500 && response.statusCode < 600 ) {
+}
+
+export function PATCH( url, parameters ) {
+
+    return new RequestBag( ).PATCH( url, parameters );
+
+}
+
+export function DELETE( url ) {
+
+    return new RequestBag( ).DELETE( url );
+
+}
+
+export class RequestBag {
+
+    constructor( { protocol = 'http', hostname = 'localhost', port = getProfile( ).HTTP_PORT } = { } ) {
+
+        this._protocol = protocol;
+        this._hostname = hostname;
+        this._port = port;
+
+        this._jar = jar( );
+        this._headers = { };
+
+    }
+
+    setHeader( name, value ) {
+
+        this._headers[ name ] = value;
+
+    }
+
+    unsetHeader( name, value ) {
+
+        this._headers[ name ] = value;
+
+    }
+
+    GET( path, parameters ) {
+
+        return this._request( { method : 'get', url : this._craftUrl( path ), qs : parameters } );
+
+    }
+
+    POST( path, data ) {
+
+        return this._request( { method : 'post', url : this._craftUrl( path ), formData : data } );
+
+    }
+
+    PATCH( path, data ) {
+
+        return this._request( { method : 'patch', url : this._craftUrl( path ), formData : data } );
+
+    }
+
+    DELETE( path ) {
+
+        return this._request( { method : 'delete', url : this._craftUrl( path ) } );
+
+    }
+
+    _craftUrl( path ) {
+
+        if ( path.indexOf( ':' ) !== -1 )
+            return path;
+
+        return format( {
+            protocol : this._protocol,
+            hostname : this._hostname,
+            port : this._port,
+            pathname : path
+        } );
+
+    }
+
+    _request( options ) {
+
+        return request( merge( { jar : this._jar, headers : this._headers }, options ) ).then( ( { response, body } ) => {
+
+            if ( response.statusCode >= 500 && response.statusCode < 600 ) {
 
                 var data = body; try { data = JSON.parse( data ); } catch ( error ) { }
-                reject( new Error( `Server returned an error on ${options.url}: ${JSON.stringify(data.message || data)}` ) );
+                throw new Error( `Server returned an error on ${options.url}: ${JSON.stringify(data.message || data)}` );
 
             } else {
 
-                resolve( { response, body } );
+                return { status : response.statusCode, data : this._parseResponse( body, response.headers[ 'content-type' ] ) };
 
             }
 
         } );
 
-    } );
-
-}
-
-function craftUrl( url ) {
-
-    var { HTTP_PORT } = getProfile( );
-
-    if ( url.indexOf( ':' ) === -1 )
-        url = `http://localhost:${HTTP_PORT}${url}`;
-
-    url += '?' + stringifyQueryString( gQueryParameters );
-
-    return url;
-
-}
-
-function parseResponse( type, body ) {
-
-    if ( type.match( /^application\/octet-stream($|;)/ ) )
-        return new Buffer( body, 'binary' );
-
-    if ( type.match( /^application\/json($|;)/ ) )
-        return JSON.parse( body );
-
-    return body;
-
-}
-
-export function registerQueryParameter( name, value ) {
-
-    if ( value == null ) {
-
-        delete gQueryParameters[ value ];
-
-    } else {
-
-        gQueryParameters[ name ] = value;
-
     }
 
-}
+    _parseResponse( body, type ) {
 
-export async function GET( url, parameters ) {
+        if ( type && type.match( /^application\/octet-stream($|;)/ ) )
+            return new Buffer( body, 'binary' );
 
-    return await request( { method : 'get', url : craftUrl( url ), qs : parameters, jar : true } ).then( ( { response, body } ) => {
-        return { status : response.statusCode, data : parseResponse( response.headers[ 'content-type' ], body ) };
-    } );
+        if ( type && type.match( /^application\/json($|;)/ ) )
+            return JSON.parse( body );
 
-}
+        return body;
 
-export async function POST( url, parameters ) {
-
-    return await request( { method : 'post', url : craftUrl( url ), formData : parameters, jar : true } ).then( ( { response, body } ) => {
-        return { status : response.statusCode, data : parseResponse( response.headers[ 'content-type' ], body ) };
-    } );
-
-}
-
-export async function PATCH( url, parameters ) {
-
-    return await request( { method : 'patch', url : craftUrl( url ), formData : parameters, jar : true } ).then( ( { response, body } ) => {
-        return { status : response.statusCode, data : parseResponse( response.headers[ 'content-type' ], body ) };
-    } );
-
-}
-
-export async function DELETE( url ) {
-
-    return await request( { method : 'delete', url : craftUrl( url ), jar : true } ).then( ( { response, body } ) => {
-        return { status : response.statusCode, data : parseResponse( response.headers[ 'content-type' ], body ) };
-    } );
+    }
 
 }

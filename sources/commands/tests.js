@@ -1,3 +1,5 @@
+import { basename }          from 'willikins/node/path';
+
 import { Database }          from 'willikins/db';
 import { Server }            from 'willikins/http';
 import { getProjectModules } from 'willikins/project';

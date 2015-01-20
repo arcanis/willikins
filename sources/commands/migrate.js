@@ -49,22 +49,26 @@ export async function command( options ) {
 
     var migrations = migrationList.filter( filter ).sort( comparator );
 
-    var database = await Database.instance( );
-    var queryInterface = database.getQueryInterface( );
+    var sequelize = await Database.instance( );
+    var queryInterface = sequelize.getQueryInterface( );
 
-    for ( var migration of migrations ) {
+    for ( var t = 0, T = migrations.length; t < T; ++ t ) {
 
-        process.stdout.write( `Applying ${migration.version} migration...\n` );
+        var migration = migrations[ t ];
+        var next = migrations[ t + 1 ];
+
+        process.stdout.write( `Applying ${migration.version} ${method} migration...\n` );
 
         var module = await System.import( migration.path );
         var fn = module[ method ];
 
-        await fn( queryInterface );
+        await fn( sequelize, queryInterface );
+
+        await dbVersionEntry.updateAttributes( {
+            value : goForward ? migration.version : next ? next.version : target
+        } );
 
     }
-
-    dbVersionEntry.value = target;
-    await dbVersionEntry.save( );
 
     process.stdout.write( `The database has been migrated into ${target}.\n` );
     process.exit( 0 );
