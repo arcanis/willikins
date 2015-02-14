@@ -24,7 +24,7 @@ class Bag extends Array {
 
         for ( var attributes of options ) {
 
-            var match = attributes.definition.match( /^(?:-([^=]),\s*)?--([a-z0-9:-]+)(?:\s+([A-Z0-9:_]+)?(?:\s+...)?)?$/ );
+            var match = attributes.definition.match( /^(?:-([^=]),\s*)?--([a-z0-9:-]+)(?:\s+([A-Z0-9:_]+)?(\s+...)?)?$/ );
 
             if ( ! match )
                 throw new InvalidDefinitionError( attributes.definition );

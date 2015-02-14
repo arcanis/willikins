@@ -14,6 +14,9 @@ async function applyRelation( instance, relation ) {
     if ( relation.hasOwnProperty( 'belongsTo' ) )
         return instance.belongsTo( await relation.belongsTo.instance( ), relation );
 
+    if ( relation.hasOwnProperty( 'belongsToMany' ) )
+        return instance.belongsToMany( await relation.belongsToMany.instance( ), relation );
+
     if ( relation.hasOwnProperty( 'hasMany' ) )
         return instance.hasMany( await relation.hasMany.instance( ), relation );
 

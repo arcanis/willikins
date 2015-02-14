@@ -35,7 +35,7 @@ export default async function( ) {
 
     for ( var path of modulePaths ) {
 
-        var name = basename( path ).replace( /[A-Z]/, letter => `-${letter.toLowerCase()}` );
+        var name = basename( path ).replace( /[A-Z]/g, letter => `-${letter.toLowerCase()}` );
         var command = commandSet.createCommand( name );
 
         var module = await System.import( path );
