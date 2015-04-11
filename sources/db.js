@@ -1,7 +1,8 @@
+import { basename }          from 'willikins/node/path';
+
 import { Sequelize }         from 'willikins/vendors/sequelize';
 import { merge }             from 'willikins/vendors/lodash';
 
-import { basename }          from 'willikins/node/path';
 import { getProfile }        from 'willikins/profile';
 import { getProjectModules } from 'willikins/project';
 import { toStream }          from 'willikins/streams';
@@ -61,8 +62,15 @@ export class Database {
         var models = [ ];
 
         for ( var path of paths ) {
+
             var module = await System.import( path );
-            models.push( module[ basename( path ) ] );
+            var name = basename( path );
+
+            if ( ! module[ name ] )
+                throw new Error( `Missing exported class ${name}` );
+
+            models.push( module[ name ] );
+
         }
 
         for ( var model of models )
@@ -84,14 +92,6 @@ export class Database {
 
     }
 
-    static async define( ... argv ) {
-
-        var db = await this.sequelize( );
-
-        return db.define( ... argv );
-
-    }
-
     static async drop( ... argv ) {
 
         var db = await this.instance( );
@@ -105,6 +105,14 @@ export class Database {
         var db = await this.instance( );
 
         return await db.sync( ... argv );
+
+    }
+
+    static async transaction( ... argv ) {
+
+        var db = await this.instance( );
+
+        return await db.transaction( ... argv );
 
     }
 
@@ -130,19 +138,32 @@ export class Model {
 
     static async register( sequelize ) {
 
-        var schema = this.schema( );
+        let schema = this.schema( );
+
+        let plugins = schema.plugins || [ ];
+        delete schema.plugins;
+
+        for ( let plugin of plugins )
+            if ( plugin.patchSchema )
+                await plugin.patchSchema( schema );
 
         this._instance = await sequelize.define( schema.table, schema.fields, merge( {
             freezeTableName : true
         }, schema.options ) );
 
+        for ( let plugin of plugins ) {
+            if ( plugin.bindHooks ) {
+                await plugin.bindHooks( this._instance );
+            }
+        }
+
     }
 
     static async link( ) {
 
-        var relations = this.relations( );
+        let relations = this.relations( );
 
-        for ( var relation of relations ) {
+        for ( let relation of relations ) {
             await applyRelation( this._instance, relation );
         }
 

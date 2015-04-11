@@ -1,9 +1,13 @@
+import { merge } from 'willikins/vendors/lodash';
+
 export class HttpError extends Error {
 
-    constructor( status, data ) {
+    constructor( status, data = { } ) {
+
+        super( );
 
         this.name = 'HttpError';
-        this.message = `${status} error`;
+        this.message = data.message || `${status} error`;
 
         this.status = status;
         this.data = data;
@@ -12,49 +16,81 @@ export class HttpError extends Error {
 
 }
 
+export class ServerError extends HttpError {
+
+    constructor( details = null ) {
+
+        super( 500, merge( { message : 'Internal server error' }, details ) );
+
+    }
+
+}
+
 export class Unimplemented extends HttpError {
 
-    constructor( ) {
+    constructor( details = null ) {
 
-        super( 500, { message : 'Unimplemented' } );
-
-        this.message = this.data.message;
+        super( 501, merge( { message : 'Unimplemented' }, details ) );
 
     }
 
 }
 
-export class AccessDenied extends HttpError {
+export class Unauthorized extends HttpError {
 
-    constructor( ) {
+    constructor( details = null ) {
 
-        super( 401, { message : 'Access denied' } );
-
-        this.message = this.data.message;
+        super( 401, merge( { message : 'Unauthorized' }, details ) );
 
     }
 
 }
 
-export class MissingField extends HttpError {
+export class Forbidden extends HttpError {
 
-    constructor( field ) {
+    constructor( details = null ) {
 
-        super( 422, { message : `Missing field (expected ${field})` } );
-
-        this.message = this.data.message;
+        super( 403, merge( { message : 'Forbidden' }, details ) );
 
     }
 
 }
 
-export class ConflictingRequest extends HttpError {
+export class UnsupportedMethod extends HttpError {
 
-    constructor( ) {
+    constructor( details = null ) {
 
-        super( 409, { message : 'Conflicting request' } );
+        super( 405, merge( { message : 'Unsupported method' }, details ) );
 
-        this.message = this.data.message;
+    }
+
+}
+
+export class Incomplete extends HttpError {
+
+    constructor( details = null ) {
+
+        super( 422, merge( { message : 'Incomplete' }, details ) );
+
+    }
+
+}
+
+export class Invalid extends HttpError {
+
+    constructor( details = null ) {
+
+        super( 422, merge( { message : 'Invalid' }, details ) );
+
+    }
+
+}
+
+export class Conflicting extends HttpError {
+
+    constructor( details = null ) {
+
+        super( 409, merge( { message : 'Conflict' }, details ) );
 
     }
 
@@ -62,11 +98,9 @@ export class ConflictingRequest extends HttpError {
 
 export class NotFound extends HttpError {
 
-    constructor( ) {
+    constructor( details = null ) {
 
-        super( 404, { message : 'Not found' } );
-
-        this.message = this.data.message;
+        super( 404, merge( { message : 'Not found' }, details ) );
 
     }
 

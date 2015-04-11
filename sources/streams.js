@@ -13,9 +13,9 @@ export class CallStream extends Writable {
 
     constructor( fn ) {
 
-        this._fn = fn;
-
         super( );
+
+        this._fn = fn;
 
     }
 

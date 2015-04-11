@@ -1,12 +1,11 @@
-import { format }       from 'willikins/node/url';
+import { format }         from 'willikins/node/url';
 
-import { merge }        from 'willikins/vendors/lodash';
-import { request, jar } from 'willikins/vendors/request';
+import { merge, without } from 'willikins/vendors/lodash';
+import { request, jar }   from 'willikins/vendors/request';
+import { clr }            from 'willikins/vendors/clicolor';
 
-import { Database }     from 'willikins/db';
-import { getProfile }   from 'willikins/profile';
-
-var clr = require( 'cli-color' );
+import { Database }       from 'willikins/db';
+import { getProfile }     from 'willikins/profile';
 
 var gTestSuite = null;
 
@@ -14,7 +13,13 @@ var gQueryParameters = null;
 
 function reindent( indent, string ) {
 
-    return string.replace( /(^|\n)/g, '$1' + indent );
+    return string.toString( ).replace( /(^|\n)/g, '$1' + indent );
+
+}
+
+function summary( string ) {
+
+    return string.toString( ).replace( /\n.*/g, '' );
 
 }
 
@@ -68,7 +73,7 @@ class TestSuite {
                 if ( showStack ) {
                     process.stdout.write( clr.red(   `\n${reindent('        ', error.stack)}\n\n` ) );
                 } else {
-                    process.stdout.write( clr.red(   `        ${error}\n` ) );
+                    process.stdout.write( clr.red(   `        ${summary(error)}\n` ) );
                 }
 
                 succeed = false;
@@ -150,6 +155,25 @@ export class RequestBag {
 
     }
 
+    static registerInterceptor( fn ) {
+
+        if ( ! this._interceptors )
+            this._interceptors = [ ];
+
+        this._interceptors.push( fn );
+
+    }
+
+    static unregisterInterceptor( fn ) {
+
+        if ( ! this._interceptors )
+            return ;
+
+        var index = this._interceptors.indexOf( fn );
+        this._interceptors.splice( index, 1 );
+
+    }
+
     setHeader( name, value ) {
 
         this._headers[ name ] = value;
@@ -164,25 +188,25 @@ export class RequestBag {
 
     GET( path, parameters ) {
 
-        return this._request( { method : 'get', url : this._craftUrl( path ), qs : parameters } );
+        return this._execute( { method : 'get', url : this._craftUrl( path ), qs : parameters } );
 
     }
 
     POST( path, data ) {
 
-        return this._request( { method : 'post', url : this._craftUrl( path ), formData : data } );
+        return this._execute( { method : 'post', url : this._craftUrl( path ), formData : data } );
 
     }
 
     PATCH( path, data ) {
 
-        return this._request( { method : 'patch', url : this._craftUrl( path ), formData : data } );
+        return this._execute( { method : 'patch', url : this._craftUrl( path ), formData : data } );
 
     }
 
     DELETE( path ) {
 
-        return this._request( { method : 'delete', url : this._craftUrl( path ) } );
+        return this._execute( { method : 'delete', url : this._craftUrl( path ) } );
 
     }
 
@@ -200,6 +224,21 @@ export class RequestBag {
 
     }
 
+    _execute( options ) {
+
+        var promise = new Promise( ( resolve, reject ) => {
+
+            for ( var interceptor of RequestBag._interceptors || [ ] )
+                interceptor( promise );
+
+            this._request( options ).then( resolve, reject );
+
+        } );
+
+        return promise;
+
+    }
+
     _request( options ) {
 
         return request( merge( { jar : this._jar, headers : this._headers }, options ) ).then( ( { response, body } ) => {
@@ -207,11 +246,20 @@ export class RequestBag {
             if ( response.statusCode >= 500 && response.statusCode < 600 ) {
 
                 var data = body; try { data = JSON.parse( data ); } catch ( error ) { }
-                throw new Error( `Server returned an error on ${options.url}: ${JSON.stringify(data.message || data)}` );
+                var extraKeys = without( Object.keys( data ), 'message' );
+
+                var maxLength = extraKeys.reduce( ( previous, key ) => Math.max( previous, key.length ), 0 );
+                var extraData = extraKeys.map( key => `     + ${key}${' '.repeat(maxLength - key.length)}: ${JSON.stringify(data[key])}` ).join( '\n' );
+
+                if ( extraKeys.length )
+                    extraData = '\n\n' + extraData + '\n';
+
+                throw new Error( `Server returned an error on ${options.url}: HTTP ${response.statusCode}: ${data.message}` + extraData );
 
             } else {
 
                 return { status : response.statusCode, data : this._parseResponse( body, response.headers[ 'content-type' ] ) };
+
 
             }
 
@@ -219,12 +267,12 @@ export class RequestBag {
 
     }
 
-    _parseResponse( body, type ) {
+    _parseResponse( body, contentType ) {
 
-        if ( type && type.match( /^application\/octet-stream($|;)/ ) )
+        if ( contentType && ( contentType.match( /^application\/octet-stream($|;)/ ) || contentType.startsWith( 'image/' ) ) )
             return new Buffer( body, 'binary' );
 
-        if ( type && type.match( /^application\/json($|;)/ ) )
+        if ( contentType && ( contentType.match( /^application\/json($|;)/ ) ) )
             return JSON.parse( body );
 
         return body;

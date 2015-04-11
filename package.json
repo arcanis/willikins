@@ -1,7 +1,7 @@
 {
     "name": "willikins",
     "description": "node web framework",
-    "version": "0.0.17",
+    "version": "0.2.0",
 
     "repository": {
         "type": "git",
@@ -13,13 +13,17 @@
     },
 
     "dependencies": {
+        "builtins": "^1.0.0",
         "cli-color": "^0.3.2",
+        "core-js": "^0.8.1",
         "express": "^4.10.0",
         "lodash": "^2.4.1",
+        "mz": "^1.3.0",
         "qs": "^2.3.2",
-        "request": "^2.51.0",
+        "request": "^2.55.0",
         "semver": "^4.1.0",
-        "sequelize": "2.0.0-rc4",
-        "systemjs": "^0.13.2"
+        "sequelize": "^2.0.5",
+        "systemjs": "^0.16.6",
+        "traceur": "^0.0.88"
     }
 }

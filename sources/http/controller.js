@@ -1,8 +1,54 @@
-import { UniqueConstraintError }         from 'willikins/vendors/sequelize';
+import { Readable }                                              from 'node/stream';
 
-import { ConflictingRequest, HttpError } from 'willikins/http/errors';
+import { BaseError as SequelizeBaseError }                       from 'willikins/db/errors';
+import { DatabaseError, UniqueConstraintError, ValidationError } from 'willikins/db/errors';
+import { HttpError, ServerError }                                from 'willikins/http/errors';
+import { getProfile }                                            from 'willikins/profile';
 
-export function controller( fn ) {
+function convertSequelizeErrorToHttp( error ) {
+
+    switch ( true ) {
+
+    case error instanceof ValidationError :
+        return new ServerError( { message : error.message, errors : error.errors } );
+
+    case error instanceof UniqueConstraintError :
+        return new ServerError( { message : error.message, errors : error.errors } );
+
+    case error instanceof DatabaseError :
+        return new ServerError( { message : error.message, sql : error.sql } );
+
+    default: return new ServerError( { message : error.message } );
+
+    }
+
+}
+
+function convertErrorToHttp( error ) {
+
+    if ( error instanceof SequelizeBaseError ) {
+
+        return convertSequelizeErrorToHttp( error );
+
+    } else if ( ! ( error instanceof Error ) ) {
+
+        return new ServerError( { message : error } );
+
+    } else if ( ! ( error instanceof HttpError ) ) {
+
+        return new ServerError( { message : error.message } );
+
+    } else {
+
+        return error;
+
+    }
+
+}
+
+export function controller( fn, { defaultContentType = 'text/plain' } = { } ) {
+
+    let { DEV_MODE } = getProfile( );
 
     return async function ( request, response ) {
 
@@ -14,52 +60,27 @@ export function controller( fn ) {
 
         } catch ( error ) {
 
-            if ( error instanceof HttpError ) {
+            error = convertErrorToHttp( error );
 
-                status = error.status;
-                data = error.data;
+            if ( error instanceof ServerError && ! DEV_MODE )
+                error = new ServerError( );
 
-            } else if ( error instanceof Error ) {
-
-                status = 500;
-                data = { message : error.toString( ) };
-
-            } else {
-
-                status = 500;
-                data = { message : ( '' + error ) };
-
-            }
+            status = error.status;
+            data = error.data;
 
         }
 
-        if ( contentType )
-            response.header( 'Content-Type', contentType );
-
+        response.header( 'Content-Type', contentType || defaultContentType );
         response.status( status );
-        response.send( data );
+
+        if ( data instanceof Readable ) {
+            data.pipe( response );
+        } else if ( typeof data === 'object' && ! ( data instanceof Buffer ) ) {
+            response.send( JSON.stringify( data ) );
+        } else {
+            response.send( data );
+        }
 
     };
-
-}
-
-export function databaseController( fn, options ) {
-
-    return controller( async function ( request, response ) {
-
-        try {
-
-            return await fn( request, response );
-
-        } catch ( error ) {
-
-            if ( error instanceof UniqueConstraintError )
-                throw new ConflictingRequest( );
-
-            throw error;
-
-        }
-
-    }, options );
 
 }

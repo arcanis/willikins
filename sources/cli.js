@@ -13,6 +13,8 @@ class Bag extends Array {
 
     constructor( ) {
 
+        super( );
+
         this._options = { };
 
         this._lastOption = null;

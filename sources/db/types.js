@@ -1,4 +1,4 @@
-var Sequelize = require( 'sequelize' );
+var Sequelize = require( __willikins_core_modules + '/sequelize' );
 
 export var UUID = Sequelize.UUID;
 export var STRING = Sequelize.STRING;

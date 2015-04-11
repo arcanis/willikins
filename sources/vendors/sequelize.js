@@ -1,3 +1,3 @@
-export var Sequelize = module.require( 'sequelize' );
+export var Sequelize = module.require( __willikins_core_modules + '/sequelize' );
 
-export var UniqueConstraintError = Sequelize.UniqueConstraintError;
+export var SequelizeInstance = Sequelize.Instance;

@@ -16,6 +16,11 @@ export var options = [
     {
         definition : '-k,--stacks',
         help : 'Display the full error stacks when errors happen'
+    },
+
+    {
+        definition : '-s,--stats',
+        help : 'Display handful stats about http requests after the tests have been executed'
     }
 
 ];
@@ -26,8 +31,6 @@ export async function command( options ) {
 
     var tests = await getProjectModules( 'tests' );
     var succeed = true;
-
-    debugger ;
 
     if ( options.only )
         tests = tests.filter( module => options.only.indexOf( basename( module ) ) !== -1 );

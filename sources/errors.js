@@ -14,6 +14,8 @@ export function errorString( strings, ... values ) {
 
         constructor( ... parameters ) {
 
+            super( );
+
             this.name = name;
 
             this.message = strings[ 0 ];

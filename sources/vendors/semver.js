@@ -1,4 +1,4 @@
-var semver = module.require( 'semver' );
+var semver = module.require( __willikins_core_modules + '/semver' );
 
 export var compare = semver.compare;
 export var rcompare = semver.rcompare;

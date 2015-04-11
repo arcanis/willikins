@@ -1,4 +1,4 @@
-var actualRequest = require( 'request' );
+var actualRequest = require( __willikins_core_modules + '/request' );
 
 export var jar = actualRequest.jar;
 

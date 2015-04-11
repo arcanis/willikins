@@ -1,5 +1,7 @@
-import { databaseController }          from 'willikins/http/controller';
-import { AccessDenied, Unimplemented } from 'willikins/http/errors';
+import { SequelizeInstance }                          from 'willikins/vendors/sequelize';
+
+import { controller }                                 from 'willikins/http/controller';
+import { UnsupportedMethod, NotFound, Unimplemented } from 'willikins/http/errors';
 
 var express = require( 'express' );
 
@@ -13,25 +15,33 @@ export class ModelActions {
 
     }
 
-    static fetch( request, model ) {
+    static get( request, id ) {
 
         throw new Unimplemented( );
+
+        // ex: return { results : await Model.find( { where : { id } } ) }
+
+    }
+
+    static fetch( request, model ) {
+
+        throw new NotFound( );
 
         // ex: return model.toJSON( )
 
     }
 
-    static create( request, body ) {
+    static create( request ) {
 
-        throw new Unimplemented( );
+        throw new NotFound( );
 
         // ex: return await Model.create( { } )
 
     }
 
-    static update( request, model, body ) {
+    static update( request, model ) {
 
-        throw new Unimplemented( );
+        throw new NotFound( );
 
         // ex: return await model.updateAttributes( { } )
 
@@ -39,7 +49,7 @@ export class ModelActions {
 
     static destroy( request, model ) {
 
-        throw new Unimplemented( );
+        throw new NotFound( );
 
         // ex: await model.delete( );
 
@@ -47,86 +57,88 @@ export class ModelActions {
 
 }
 
-export function model( Model, actions, { identifier = 'id' } = { } ) {
+export function restInterface( actions ) {
+
+    var normalize = async ( request, data ) => data instanceof SequelizeInstance
+        ? await actions.fetch( request, data ) : data;
 
     return express( )
 
-        .get( '/', databaseController( async function ( request, response ) {
+        .get( '/', controller( async function ( request, response ) {
 
             var data = await actions.index( request );
 
-            data.results = await Promise.all( data.results.map( model => actions.fetch( request, model ) ) );
+            data.results = await Promise.all( data.results.map( model => normalize( request, model ) ) );
 
             return { status : 200, data };
 
-        } ) )
+        }, { defaultContentType : 'application/json' } ) )
 
-        .post( '/', databaseController( async function ( request, response ) {
+        .post( '/', controller( async function ( request, response ) {
 
-            var model = await actions.create( request, request.body );
+            var data = await actions.create( request );
 
-            return { status : 201, data : await actions.fetch( request, model ) };
+            return { status : 201, data : await normalize( request, data ) };
 
-        } ) )
+        }, { defaultContentType : 'application/json' } ) )
 
-        .get( '/:id', databaseController( async function ( request, response ) {
+        .get( '/:id', controller( async function ( request, response ) {
 
-            var model = await Model.find( { where : { [identifier] : request.params.id } } );
+            var data = await actions.get( request, request.params.id );
 
-            if ( ! model )
-                throw new AccessDenied( );
+            if ( ! data )
+                throw new NotFound( );
 
-            return { status : 200, data : await actions.fetch( request, model ) };
+            return { status : 200, data : await normalize( request, data ) };
 
-        } ) )
+        }, { defaultContentType : 'application/json' } ) )
 
-        .patch( '/:id', databaseController( async function ( request, response ) {
+        .patch( '/:id', controller( async function ( request, response ) {
 
-            var model = await Model.find( { where : { [identifier] : request.params.id } } );
+            var data = await actions.get( request, request.params.id );
 
-            if ( ! model )
-                throw new AccessDenied( );
+            if ( ! data )
+                throw new NotFound( );
 
-            await actions.update( request, model, request.body );
+            await actions.update( request, data );
 
-            return { status : 200, data : await actions.fetch( request, model ) };
+            return { status : 200, data : await normalize( request, data ) };
 
-        } ) )
+        }, { defaultContentType : 'application/json' } ) )
 
-        .delete( '/:id', databaseController( async function ( request, response ) {
+        .delete( '/:id', controller( async function ( request, response ) {
 
-            var model = await Model.find( { where : { [identifier] : request.params.id } } );
+            var data = await actions.get( request, request.params.id );
 
-            if ( ! model )
-                throw new AccessDenied( );
+            if ( ! data )
+                throw new NotFound( );
 
-            await actions.destroy( request, model );
+            await actions.destroy( request, data );
 
             return { status : 200, data : { } };
 
-        } ) )
+        }, { defaultContentType : 'application/json' } ) )
 
-        .all( '/:id/:action', databaseController( async function ( request, response ) {
+        .all( '/:id/:action', controller( async function ( request, response ) {
 
-            var method = request.method.toLowerCase( );
+            var method = request.method.toUpperCase( );
             var camelcase = request.params.action.replace( /(?:^|-)([a-z])/g, ( all, letter ) => letter.toUpperCase( ) );
+            var fnName = method + '_' + camelcase;
 
-            var normalized = method + camelcase;
+            if ( [ 'GET', 'POST', 'PATCH', 'DELETE' ].indexOf( method ) === -1 )
+                throw new MethodNotAllowed( );
 
-            if ( [ 'get', 'post', 'patch', 'delete' ].indexOf( method ) === -1 )
-                throw new AccessDenied( );
+            if ( ! fn in actions || fn in Object.prototype )
+                throw new NotFound( );
 
-            if ( ! normalized in actions || normalized in Object.prototype )
-                throw new AccessDenied( );
-
-            var model = await Model.find( { where : { [identifier] : request.params.id } } );
+            var model = actions.get( request, request.params.id );
 
             if ( ! model )
                 throw new AccessDenied( );
 
-            return await actions[ normalized ]( request, model );
+            return await actions[ fn ]( request, model );
 
-        } ) )
+        }, { defaultContentType : 'application/json' } ) )
 
      ;
 

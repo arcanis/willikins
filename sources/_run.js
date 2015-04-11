@@ -17,10 +17,7 @@ function wrapCommand( command ) {
 
 }
 
-export default async function( ) {
-
-    if ( ( process.getuid && process.getuid( ) ) === 0 || ( process.getgid && process.getgid( ) === 0 ) )
-        throw new Error( 'Please don\'t run Willikins as root' );
+export default async function ( argv ) {
 
     addPathToProject( 'willikins' );
     addPathToProject( 'app' );
@@ -52,6 +49,6 @@ export default async function( ) {
 
     }
 
-    return await commandSet.run( process.argv.slice( 2 ) );
+    return await commandSet.run( argv );
 
 }
