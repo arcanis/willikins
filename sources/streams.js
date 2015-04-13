@@ -42,7 +42,7 @@ export function toStream( target ) {
         return new CallStream( target );
 
     if ( typeof target === 'string' )
-        target = createWriteStream( target );
+        return createWriteStream( target );
 
     throw new Error( 'Cannot cast ' + target + ' to a stream' );
 
