@@ -192,21 +192,21 @@ export class RequestBag {
 
     }
 
-    POST( path, data ) {
+    POST( path, data, parameters ) {
 
-        return this._execute( { method : 'post', url : this._craftUrl( path ), formData : data } );
-
-    }
-
-    PATCH( path, data ) {
-
-        return this._execute( { method : 'patch', url : this._craftUrl( path ), formData : data } );
+        return this._execute( { method : 'post', url : this._craftUrl( path ), qs : parameters, formData : data } );
 
     }
 
-    DELETE( path ) {
+    PATCH( path, data, parameters ) {
 
-        return this._execute( { method : 'delete', url : this._craftUrl( path ) } );
+        return this._execute( { method : 'patch', url : this._craftUrl( path ), qs : parameters, formData : data } );
+
+    }
+
+    DELETE( path, parameters ) {
+
+        return this._execute( { method : 'delete', url : this._craftUrl( path ), qs : parameters } );
 
     }
 
