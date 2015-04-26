@@ -1,5 +1,5 @@
-import { Database }   from 'willikins/db';
-import { Server }     from 'willikins/http';
+import { Database } from 'willikins/db';
+import { Server }   from 'willikins/http';
 
 export var help = 'Run the server';
 

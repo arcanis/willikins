@@ -27,7 +27,8 @@ export var options = [
 
 export async function command( options ) {
 
-    await Server.start( );
+    await Database.instance( );
+    await Server.instance( );
 
     var tests = await getProjectModules( 'tests' );
     var succeed = true;

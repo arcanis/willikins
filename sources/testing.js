@@ -13,13 +13,13 @@ var gQueryParameters = null;
 
 function reindent( indent, string ) {
 
-    return string.toString( ).replace( /(^|\n)/g, '$1' + indent );
+    return String( string ).replace( /(^|\n)/g, '$1' + indent );
 
 }
 
 function summary( string ) {
 
-    return string.toString( ).replace( /\n.*/g, '' );
+    return String( string ).replace( /\n.*/g, '' );
 
 }
 
@@ -71,7 +71,7 @@ class TestSuite {
                 process.stdout.write( clr.red(   `  ✗ ${name} ${description}\n` ) );
 
                 if ( showStack ) {
-                    process.stdout.write( clr.red(   `\n${reindent('        ', error.stack)}\n\n` ) );
+                    process.stdout.write( clr.red(   `\n${reindent('        ', error.stack||JSON.stringify(error))}\n\n` ) );
                 } else {
                     process.stdout.write( clr.red(   `        ${summary(error)}\n` ) );
                 }
@@ -144,7 +144,13 @@ export function DELETE( url ) {
 
 export class RequestBag {
 
-    constructor( { protocol = 'http', hostname = 'localhost', port = getProfile( ).HTTP_PORT } = { } ) {
+    constructor( { protocol = 'http', hostname = 'localhost', port = null } = { } ) {
+
+        if ( ! port )
+            port = getProfile( ).HTTP_EX_PORT;
+
+        if ( ! port )
+            port = getProfile( ).HTTP_PORT;
 
         this._protocol = protocol;
         this._hostname = hostname;

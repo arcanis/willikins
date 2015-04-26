@@ -1,42 +1,21 @@
 import { getProfile } from 'willikins/profile';
 
-var express = require( 'express' );
-
-function runServer( app, port ) {
-
-    return new Promise( ( resolve, reject ) => {
-
-        app.listen( port, ( error, result ) => {
-
-            if ( error ) reject( error );
-            else         resolve( result );
-
-        } );
-
-    } );
-
-}
-
 export class Server {
 
-    static async instance( ) {
+    static async _setup( ) {
 
-        if ( this._instance )
-            return this._instance;
+        let { SERVER_BUILDER } = getProfile( );
 
-        var { SERVER_BUILDER, HTTP_PORT } = getProfile( );
-
-        var app = await SERVER_BUILDER( express( ) );
-
-        this._instance = await runServer( app, HTTP_PORT );
-
-        return this._instance;
+        return await SERVER_BUILDER( );
 
     }
 
-    static start( ) {
+    static async instance( ) {
 
-        return this.instance( );
+        if ( ! this._serverPromise )
+            this._serverPromise = this._setup( );
+
+        return await this._serverPromise;
 
     }
 
