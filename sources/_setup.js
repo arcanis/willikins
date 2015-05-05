@@ -38,7 +38,7 @@ Builtins.forEach( function ( name ) {
         nodeModule = require( name );
     }
 
-    es6Module = Object.create( nodeModule );
+    es6Module = Object.assign( { }, nodeModule );
     es6Module.defaults = nodeModule;
 
     System.set( 'node/' + name, System.newModule( es6Module ) );
