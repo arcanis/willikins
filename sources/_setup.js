@@ -13,11 +13,14 @@ GLOBAL.__willikins_app_modules = Path.join( __willikins_app_dir, 'node_modules' 
 
 // We load the Core.js shim, which will hook the missing ES6 functions inside the environment
 
-require( __willikins_core_modules + '/core-js/shim' );
+require( __willikins_core_modules + '/babel/polyfill' );
 
 var Builtins = require( __willikins_core_modules + '/builtins' );
 var System = require( __willikins_core_modules + '/systemjs' );
 
+System.transpiler = 'babel';
+
+System.babelOptions = { stage : 1 };
 System.traceurOptions = { asyncFunctions : true };
 
 System.baseURL = '/';

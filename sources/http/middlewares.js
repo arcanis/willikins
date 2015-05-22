@@ -7,6 +7,15 @@ var express = require( 'express' );
 
 export class ModelActions {
 
+    static async normalize( request, data ) {
+
+        if ( data instanceof SequelizeInstance )
+            return await this.fetch( request, data );
+
+        return data;
+
+    }
+
     static index( request ) {
 
         throw new Unimplemented( );
@@ -59,16 +68,13 @@ export class ModelActions {
 
 export function restInterface( actions ) {
 
-    var normalize = async ( request, data ) => data instanceof SequelizeInstance
-        ? await actions.fetch( request, data ) : data;
-
     return express( )
 
         .get( '/', controller( async function ( request, response ) {
 
             var data = await actions.index( request );
 
-            data.results = await Promise.all( data.results.map( model => normalize( request, model ) ) );
+            data.results = await Promise.all( data.results.map( model => actions.normalize( request, model ) ) );
 
             return { status : 200, data };
 
@@ -78,7 +84,7 @@ export function restInterface( actions ) {
 
             var data = await actions.create( request );
 
-            return { status : 201, data : await normalize( request, data ) };
+            return { status : 201, data : await actions.normalize( request, data ) };
 
         }, { defaultContentType : 'application/json' } ) )
 
@@ -89,7 +95,7 @@ export function restInterface( actions ) {
             if ( ! data )
                 throw new NotFound( );
 
-            return { status : 200, data : await normalize( request, data ) };
+            return { status : 200, data : await actions.normalize( request, data ) };
 
         }, { defaultContentType : 'application/json' } ) )
 
@@ -102,7 +108,7 @@ export function restInterface( actions ) {
 
             await actions.update( request, data );
 
-            return { status : 200, data : await normalize( request, data ) };
+            return { status : 200, data : await actions.normalize( request, data ) };
 
         }, { defaultContentType : 'application/json' } ) )
 
