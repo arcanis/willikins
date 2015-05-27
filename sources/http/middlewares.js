@@ -127,22 +127,22 @@ export function restInterface( actions ) {
 
         .all( '/:id/:action', controller( async function ( request, response ) {
 
-            var method = request.method.toUpperCase( );
+            var method = request.method.toLowerCase( );
             var camelcase = request.params.action.replace( /(?:^|-)([a-z])/g, ( all, letter ) => letter.toUpperCase( ) );
-            var fnName = method + '_' + camelcase;
+            var fnName = method + camelcase;
 
-            if ( [ 'GET', 'POST', 'PATCH', 'DELETE' ].indexOf( method ) === -1 )
-                throw new MethodNotAllowed( );
+            if ( [ 'get', 'post', 'patch', 'delete' ].indexOf( method ) === -1 )
+                throw new UnsupportedMethod( );
 
-            if ( ! fn in actions || fn in Object.prototype )
+            if ( ! fnName in actions || fnName in Object.prototype )
                 throw new NotFound( );
 
-            var model = actions.get( request, request.params.id );
+            var model = await actions.get( request, request.params.id );
 
             if ( ! model )
-                throw new AccessDenied( );
+                throw new NotFound( );
 
-            return await actions[ fn ]( request, model );
+            return await actions[ fnName ]( request, model );
 
         }, { defaultContentType : 'application/json' } ) )
 
