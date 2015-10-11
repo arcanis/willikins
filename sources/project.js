@@ -1,19 +1,22 @@
-import { relative as relativePath, dirname, basename } from 'willikins/node/path';
-import { readdir }                                     from 'willikins/node/fs';
+import { readdir }                                   from 'node/fs';
+import { basename, dirname, extname, join, resolve } from 'node/path';
+
+import { rc }                                        from 'willikins/vendors/rc';
 
 async function getFolderFiles( path ) {
 
-    var resolvedPath = await System.locate( { name : path + '/index' } );
+    let resolvedPath = await System.normalize( path + '/index' );
 
     if ( resolvedPath.indexOf( 'file:' ) === 0 )
 	resolvedPath = resolvedPath.substr( 5 );
 
-    var directory = dirname( resolvedPath );
+    let directory = dirname( resolvedPath );
+    let files = null;
 
     try {
-        var files = await readdir( directory );
+        files = await readdir( directory );
     } catch ( error ) {
-        var files = [ ];
+        files = [ ];
     }
 
     return files.map( file => path + '/' + file );
@@ -22,15 +25,24 @@ async function getFolderFiles( path ) {
 
 async function getFolderModules( path ) {
 
-    var projectFiles = await getFolderFiles( path );
+    let projectFiles = await getFolderFiles( path );
 
-    var projectModules = projectFiles.filter( file => file.match( /\.js$/ ) );
+    let projectModules = projectFiles.filter( file => file.match( /\.js$/ ) );
 
     return projectModules.map( file => dirname( file ) + '/' + basename( file, '.js' ) );
 
 }
 
-var gProjectPaths = [ ];
+let gProjectPaths = [ ];
+
+export function registerProjectAlias( alias, target ) {
+
+    if ( ! target.startsWith( 'file://' ) )
+        target = 'file://' + target;
+
+    System.paths[ alias ] = target;
+
+}
 
 export function addPathToProject( path ) {
 
@@ -40,9 +52,9 @@ export function addPathToProject( path ) {
 
 export async function getProjectFiles( path ) {
 
-    var files = [ ];
+    let files = [ ];
 
-    for ( var projectPath of gProjectPaths )
+    for ( let projectPath of gProjectPaths )
         files = files.concat( await getFolderFiles( projectPath + '/' + path ) );
 
     return files;
@@ -51,25 +63,53 @@ export async function getProjectFiles( path ) {
 
 export async function getProjectModules( path ) {
 
-    var modules = [ ];
+    let modules = [ ];
 
-    for ( var projectPath of gProjectPaths )
+    for ( let projectPath of gProjectPaths )
         modules = modules.concat( await getFolderModules( projectPath + '/' + path ) );
 
     return modules;
 
 }
 
-export async function importExternal( path ) {
+export async function importExternal( target ) {
 
-    var baseURL = System.baseURL;
+    let base = stripFileProtocol( System.baseURL );
+    let path = stripFileProtocol( target );
 
-    if ( baseURL.indexOf( 'file:' ) === 0 )
-        baseURL = baseURL.substr( 5 );
+    if ( ! basename( path ).includes( '.' ) )
+        path += '.js';
 
-    var relativeProfilePath = relativePath( baseURL, dirname( path ) + '/' + basename( path, '.js' ) );
-    var module = await System.import( relativeProfilePath );
+    if ( path[ 0 ] !== '/' )
+        path = join( process.cwd( ), path );
+
+    let relativeProfilePath = resolve( base, path );
+    let module = await System.import( relativeProfilePath );
 
     return module;
+
+}
+
+export async function evaluateWillikinsrc( ) {
+
+    let files = rc( 'willikins', { }, { }, ( ) => ( { } ) ).configs || [ ];
+    let configuration = { };
+
+    while ( files.length > 0 )
+        Object.assign( configuration, await importExternal( files.shift( ) ) );
+
+    return configuration;
+
+}
+
+export function stripFileProtocol( path ) {
+
+    if ( ! path )
+        return path;
+
+    if ( path.startsWith( 'file://' ) )
+        path = path.substr( 7 );
+
+    return path;
 
 }

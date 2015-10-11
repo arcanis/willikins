@@ -1,17 +1,18 @@
-import { basename }          from 'willikins/node/path';
+import { basename }          from 'node/path';
 
 import { Database }          from 'willikins/db';
 import { Server }            from 'willikins/http';
 import { getProjectModules } from 'willikins/project';
 
-export var help = 'Run application tests';
+export let help = `
 
-export var options = [
+    Run the application tests
 
-    {
-        definition : '-o,--only COMPONENTS ...',
-        help : 'Only run specified components tests'
-    },
+    If [components] is specified, only the specified components will be tested.
+
+`;
+
+export let options = [
 
     {
         definition : '-k,--stacks',
@@ -21,6 +22,10 @@ export var options = [
     {
         definition : '-s,--stats',
         help : 'Display handful stats about http requests after the tests have been executed'
+    },
+
+    {
+        definition : 'components ...'
     }
 
 ];
@@ -30,18 +35,18 @@ export async function command( options ) {
     await Database.instance( );
     await Server.instance( );
 
-    var tests = await getProjectModules( 'tests' );
-    var succeed = true;
+    let tests = await getProjectModules( 'tests' );
+    let succeed = true;
 
-    if ( options.only )
-        tests = tests.filter( module => options.only.indexOf( basename( module ) ) !== -1 );
+    if ( options.components )
+        tests = tests.filter( module => options.components.includes( basename( module ) ) );
 
-    for ( var t = 0; t < tests.length; ++ t ) {
+    for ( let t = 0; t < tests.length; ++ t ) {
 
         if ( t > 0 )
             process.stdout.write( '\n' );
 
-        var module = await System.import( tests[ t ] );
+        let module = await System.import( tests[ t ] );
 
         await Database.drop( );
         await Database.sync( );

@@ -1,4 +1,4 @@
-var gProfile = null;
+let gProfile = null;
 
 export function setProfile( profile ) {
 

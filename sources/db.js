@@ -1,4 +1,4 @@
-import { basename }          from 'willikins/node/path';
+import { basename }          from 'node/path';
 
 import { Sequelize }         from 'willikins/vendors/sequelize';
 import { merge }             from 'willikins/vendors/lodash';
@@ -49,22 +49,22 @@ export class Database {
         if ( this._setupLock )
             throw new Error( 'Cannot setup multiple database contexts' );
 
-        var { DB_NAME, DB_USER, DB_PASS, DB_DIALECT, DB_STORAGE, DB_PORT, LOGS_SQL } = getProfile( );
+        let { DB_NAME, DB_USER, DB_PASS, DB_DIALECT, DB_STORAGE, DB_PORT, LOGS_SQL } = getProfile( );
 
-        var sequelize = new Sequelize( DB_NAME, DB_USER, DB_PASS, {
+        let sequelize = new Sequelize( DB_NAME, DB_USER, DB_PASS, {
             logging : makeLogger( toStream( LOGS_SQL ) ),
             dialect : DB_DIALECT,
             storage : DB_STORAGE,
             port : DB_PORT
         } );
 
-        var paths = await getProjectModules( 'models' );
-        var models = [ ];
+        let paths = await getProjectModules( 'models' );
+        let models = [ ];
 
-        for ( var path of paths ) {
+        for ( let path of paths ) {
 
-            var module = await System.import( path );
-            var name = basename( path );
+            let module = await System.import( path );
+            let name = basename( path );
 
             if ( ! module[ name ] )
                 throw new Error( `Missing exported class ${name}` );
@@ -73,10 +73,10 @@ export class Database {
 
         }
 
-        for ( var model of models )
+        for ( let model of models )
             await model.register( sequelize );
 
-        for ( var model of models )
+        for ( let model of models )
             await model.link( );
 
         return sequelize;
@@ -94,7 +94,7 @@ export class Database {
 
     static async drop( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.drop( ... argv );
 
@@ -102,7 +102,7 @@ export class Database {
 
     static async sync( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.sync( ... argv );
 
@@ -110,7 +110,7 @@ export class Database {
 
     static async transaction( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.transaction( ... argv );
 
@@ -147,9 +147,11 @@ export class Model {
             if ( plugin.patchSchema )
                 await plugin.patchSchema( schema );
 
-        this._instance = await sequelize.define( schema.table, schema.fields, merge( {
-            freezeTableName : true
-        }, schema.options ) );
+        let { table, fields, instanceMethods, options } = schema;
+
+        this._instance = await sequelize.define( table, fields, merge( {
+            freezeTableName : true, instanceMethods
+        }, options ) );
 
         for ( let plugin of plugins ) {
             if ( plugin.bindHooks ) {
@@ -180,7 +182,7 @@ export class Model {
 
     static async sync( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.sync( ... argv );
 
@@ -188,7 +190,7 @@ export class Model {
 
     static async count( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.count( ... argv );
 
@@ -196,7 +198,7 @@ export class Model {
 
     static async findAll( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.findAll( ... argv );
 
@@ -204,7 +206,7 @@ export class Model {
 
     static async find( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.find( ... argv );
 
@@ -212,15 +214,23 @@ export class Model {
 
     static async create( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.create( ... argv );
 
     }
 
+    static async bulkCreate( ... argv ) {
+
+        let db = await this.instance( );
+
+        return await db.bulkCreate( ... argv );
+
+    }
+
     static async findOrCreate( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.findOrCreate( ... argv );
 
@@ -228,7 +238,7 @@ export class Model {
 
     static async destroy( ... argv ) {
 
-        var db = await this.instance( );
+        let db = await this.instance( );
 
         return await db.destroy( ... argv );
 

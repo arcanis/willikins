@@ -1,13 +1,17 @@
+import { camelCase }   from 'willikins/vendors/lodash';
+
 import { errorString } from 'willikins/errors';
 
-export var NameError              = errorString `NameError: "${0}" is not a valid option name`;
-export var InvalidDefinitionError = errorString `InvalidDefinitionError: Invalid definition "${0}"`;
-export var RedefinitionError      = errorString `RedefinitionError: Cannot redefine option "${0}"`;
-export var UnknownOptionError     = errorString `UnknownOptionError: Unknown option "${0}"`;
-export var GlobalValidationError  = errorString `GlobalValidationError: ${0}`;
-export var ValidationError        = errorString `ValidationError: Cannot validate "${0}": ${1}`;
-export var MissingCommandError    = errorString `MissingCommandError: Missing command`;
-export var BadCommandError        = errorString `BadCommandError: "${0}" is not a valid command`;
+export let TooMuchGreedinessError = errorString `TooMuchGreedinessError: A command cannot have multiple greedy positional options`;
+export let NameError              = errorString `NameError: "${0}" is not a valid option name`;
+export let InvalidDefinitionError = errorString `InvalidDefinitionError: Invalid definition "${0}"`;
+export let TypeError              = errorString `TypeError: Invalid type "${0}" for option "${1}"`;
+export let RedefinitionError      = errorString `RedefinitionError: Cannot redefine option "${0}"`;
+export let UnknownOptionError     = errorString `UnknownOptionError: Unknown option "${0}"`;
+export let GlobalValidationError  = errorString `GlobalValidationError: ${0}`;
+export let ValidationError        = errorString `ValidationError: Cannot validate "${0}": ${1}`;
+export let MissingCommandError    = errorString `MissingCommandError: Missing command`;
+export let BadCommandError        = errorString `BadCommandError: "${0}" is not a valid command`;
 
 class Bag extends Array {
 
@@ -17,6 +21,10 @@ class Bag extends Array {
 
         this._options = { };
 
+        this._positionalOptions = [ ];
+        this._positionalOptionRest = null;
+        this._positionalOptionIndex = 0;
+
         this._lastOption = null;
         this._valueCount = 0;
 
@@ -24,29 +32,51 @@ class Bag extends Array {
 
     addOptions( options ) {
 
-        for ( var attributes of options ) {
+        let regularOptionRegexp = /^(?:-([^=]),\s*)?--([a-z0-9:-]+)(?:\s+([A-Z0-9:_]+)?(\s+...)?)?$/;
+        let positionalOptionRegexp = /^([a-z0-9:-]+)(\s+...)?$/;
 
-            var match = attributes.definition.match( /^(?:-([^=]),\s*)?--([a-z0-9:-]+)(?:\s+([A-Z0-9:_]+)?(\s+...)?)?$/ );
+        for ( let attributes of options ) {
 
-            if ( ! match )
+            let match;
+            let short, long, parameter, ellipsis, positional;
+
+            if ( ( match = attributes.definition.match( positionalOptionRegexp ) ) ) {
+
+                long = match[ 1 ];
+                ellipsis = match[ 2 ];
+                positional = true;
+
+            } else if ( ( match = attributes.definition.match( regularOptionRegexp ) ) ) {
+
+                short = match[ 1 ];
+                long = match[ 2 ];
+                parameter = match[ 3 ];
+                ellipsis = match[ 4 ];
+
+            } else {
+
                 throw new InvalidDefinitionError( attributes.definition );
 
-            var [ , abbr, full, parameter, ellipsis ] = match;
+            }
 
-            if ( full in this )
-                throw new NameError( full );
+            if ( long in this )
+                throw new NameError( long );
 
-            if ( Object.prototype.hasOwnProperty.call( this._options, full ) )
-                throw new RedefinitionError( full );
+            if ( Object.prototype.hasOwnProperty.call( this._options, long ) )
+                throw new RedefinitionError( long );
 
-            if ( abbr && Object.prototype.hasOwnProperty.call( this._options, abbr ) )
-                throw new RedefinitionError( abbr );
+            if ( short && Object.prototype.hasOwnProperty.call( this._options, short ) )
+                throw new RedefinitionError( short );
 
-            var option = { };
+            if ( positional && ellipsis && this._positionalOptionRest )
+                throw new TooMuchGreedinessError( );
 
-            option.name = full;
+            let option = { };
+
+            option.name = long;
             option.type = attributes.type;
             option.parameter = parameter;
+            option.property = camelCase( long );
 
             option.required = attributes.required;
             option.minValueCount = attributes.minValueCount;
@@ -56,7 +86,7 @@ class Bag extends Array {
                 option.minValueCount = option.maxValueCount = attributes.valueCount;
 
             if ( typeof option.type === 'undefined' )
-                option.type = typeof option.parameter === 'undefined' ? 'boolean' : 'string';
+                option.type = typeof option.parameter === 'undefined' && ! positional ? 'boolean' : 'string';
 
             if ( typeof option.minValueCount === 'undefined' )
                 option.minValueCount = parameter && ! ellipsis ? 1 : 0;
@@ -64,36 +94,42 @@ class Bag extends Array {
             if ( typeof option.maxValueCount === 'undefined' )
                 option.maxValueCount = parameter && ellipsis ? Infinity : parameter ? 1 : 0;
 
-            this._options[ full ] = option;
+            this._options[ long ] = option;
 
-            if ( abbr ) {
-                this._options[ abbr ] = option;
+            if ( short )
+                this._options[ short ] = option;
+
+            if ( positional && ! ellipsis )
+                this._positionalOptions.push( option );
+
+            if ( positional && ellipsis ) {
+                this._positionalOptionRest = option;
             }
 
         }
 
     }
 
-    add( name, value = null ) {
+    add( name, argument = null ) {
 
         name = this._translate( name );
 
         if ( ! this._options[ name ] )
             throw new UnknownOptionError( name );
 
-        this._lastOption = name;
+        let option = this._lastOption = this._options[ name ];
 
-        if ( this._options[ name ].maxValueCount > 1 ) {
+        if ( option.maxValueCount > 1 ) {
 
-            this[ name ] = value ? [ this._castValue( name, value ) ] : [ ];
+            this[ option.property ] = argument ? [ this._castOption( name, argument ) ] : [ ];
 
-            this._valueCount = value === null ? this._options[ name ].maxValueCount : 0;
+            this._valueCount = argument === null ? option.maxValueCount : 0;
 
         } else {
 
-            this[ name ] = this._castValue( name, value );
+            this[ option.property ] = this._castOption( name, argument );
 
-            this._valueCount = this._options[ name ].maxValueCount;
+            this._valueCount = option.maxValueCount;
 
         }
 
@@ -103,17 +139,23 @@ class Bag extends Array {
 
         if ( this._valueCount > 0 ) {
 
-            if ( this._options[ this._lastOption ].maxValueCount > 1 ) {
-                this[ this._lastOption ].push( argument );
+            let value = this._castOption( this._lastOption.name, argument );
+
+            if ( this._lastOption.maxValueCount > 1 ) {
+                this[ this._lastOption.property ].push( value );
             } else {
-                this[ this._lastOption ] = argument;
+                this[ this._lastOption.property ] = value;
             }
 
             this._valueCount -= 1;
 
         } else {
 
-            super.push( argument );
+            if ( this._positionalOptionIndex < this._positionalOptions.length ) {
+                this.add( this._positionalOptions[ this._positionalOptionIndex ++ ].name, argument );
+            } else {
+                super.push( argument );
+            }
 
         }
 
@@ -127,27 +169,27 @@ class Bag extends Array {
 
     validate( { ignoreRequired = false } = { } ) {
 
-        for ( var name of Object.keys( this._options ) ) {
+        for ( let name of Object.keys( this._options ) ) {
 
-            var option = this._options[ name ];
+            let option = this._options[ name ];
 
             if ( option.name !== name )
                 continue ;
 
-            if ( option.required && ! this.hasOwnProperty( name ) && ! ignoreRequired )
+            if ( option.required && ! this.hasOwnProperty( option.property ) && ! ignoreRequired )
                 throw new GlobalValidationError( `Missing required property "${name}"` );
 
-            if ( this.hasOwnProperty( name ) ) {
+            if ( this.hasOwnProperty( option.property ) ) {
 
                 if ( option.maxValueCount > 1 ) {
 
-                    if ( this[ name ].length < option.minValueCount )
+                    if ( this[ option.property ].length < option.minValueCount )
                         throw new ValidationError( name, `expecting at least ${option.maxValueCount} ${option.parameter} arguments` );
 
-                    if ( this[ name ].length > option.maxValueCount )
+                    if ( this[ option.property ].length > option.maxValueCount )
                         throw new ValidationError( name, `expecting at most ${option.maxValueCount} ${option.parameter} arguments` );
 
-                } else if ( option.minValueCount > 0 && this[ name ] === null ) {
+                } else if ( option.minValueCount > 0 && this[ option.property ] === null ) {
 
                     throw new ValidationError( name, `missing ${option.parameter} argument` );
 
@@ -156,6 +198,8 @@ class Bag extends Array {
             }
 
         }
+
+        return this;
 
     }
 
@@ -169,22 +213,28 @@ class Bag extends Array {
 
     }
 
-    _castValue( name, value ) {
+    _castOption( name, argument ) {
 
-        switch ( this._options[ name ].type ) {
+        let type = this._options[ name ].type;
+
+        switch ( type ) {
 
             case 'string':
-                return value;
+                return String( argument );
 
             case 'boolean':
-                if ( value === null ) return true; // If no parameter, assume true
-                return [ false, 'no', 'false' ].indexOf( value ) === -1 && Number( value ) !== 0;
+                if ( argument === null ) return true; // If no parameter, assume true
+                return [ false, 'no', 'false' ].indexOf( argument ) === -1 && Number( argument ) !== 0;
 
             case 'integer':
-                return Math.floor( value );
+                return Math.floor( argument );
 
             case 'number':
-                return Number( value );
+                return Number( argument );
+
+            default: {
+                throw new TypeError( type, name );
+            }
 
         }
 
@@ -208,17 +258,23 @@ class Command {
 
         this._help = help;
 
+        return this;
+
     }
 
     setRunner( runner ) {
 
         this._runner = runner;
 
+        return this;
+
     }
 
     addOption( option ) {
 
         this._options.push( option );
+
+        return this;
 
     }
 
@@ -238,21 +294,39 @@ export class CommandSet {
 
         this._options.push( option );
 
+        return this;
+
     }
 
     createCommand( name ) {
 
-        var command = new Command( );
+        let command = new Command( );
         this._commands[ name ] = command;
 
         return command;
 
     }
 
+    async parse( argv ) {
+
+        let bag = new Bag( );
+        let index = 0;
+
+        bag.addOptions( this._options );
+
+        for ( ; index < argv.length && bag.length === 0; ++ index )
+            this._parseArgument( bag, argv[ index ] );
+
+        bag.validate( );
+
+        return bag;
+
+    }
+
     async run( argv ) {
 
-        var bag = new Bag( );
-        var index = 0;
+        let bag = new Bag( );
+        let index = 0;
 
         // First parsing : only options up to the first positional argument
 
@@ -270,8 +344,8 @@ export class CommandSet {
 
         // Yeay ! We've got the command. Maybe.
 
-        var commandName = bag.pop( );
-        var command = this._commands[ commandName ];
+        let commandName = bag.pop( );
+        let command = this._commands[ commandName ];
 
         if ( ! command )
             throw new BadCommandError( commandName );
@@ -289,7 +363,7 @@ export class CommandSet {
             for ( index += 1; index < argv.length; ++ index )
                 bag.push( argv[ index ] );
 
-        bag.validate( );
+        bag.validate( { ignoreRequired : true } );
 
         // And finally run !
 
@@ -299,7 +373,7 @@ export class CommandSet {
 
     _parseArgument( bag, argument ) {
 
-        var match;
+        let match;
 
         if ( match = argument.match( /^--no-([^=]+)$/ ) ) {
             bag.add( match[ 1 ], false );

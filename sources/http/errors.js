@@ -78,6 +78,20 @@ export class Incomplete extends HttpError {
 
 export class Invalid extends HttpError {
 
+    static checkValues( checks ) {
+
+        let errors = [ ];
+
+        for ( let [ message, status ] of Object.entries( checks ) )
+            if ( ! status ) errors.push( message );
+
+        if ( errors.length === 0 )
+            return ;
+
+        throw new this( { errors } );
+
+    }
+
     constructor( details = null ) {
 
         super( 422, merge( { message : 'Invalid' }, details ) );

@@ -1,4 +1,4 @@
-var qs = module.require( __willikins_core_modules + '/qs' );
+let qs = require( __willikins_core_modules + '/qs' );
 
-export var parse = qs.parse;
-export var stringify = qs.stringify;
+export let parse = qs.parse;
+export let stringify = qs.stringify;

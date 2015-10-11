@@ -1,21 +1,34 @@
-import { basename, relative as relativePath } from 'willikins/node/path';
+import { basename, relative as relativePath } from 'node/path';
+
 import { CommandSet }                         from 'willikins/cli';
 import { importExternal }                     from 'willikins/project';
 
-export var help = 'Execute any command on the filesystem';
+export let help = `
 
-export var options = [
+    Execute any command on the filesystem
+
+    This command may execute any other command located on the filesystem as if it was part of the project. It is useful if you wish to create one-time-commands, that shouldn't be available from the regular command line.
+
+    Note that you have to use the "--" separator before passing any parameter to the command - otherwise they will be interpreted as parameter of the exec command itself, and not your command.
+
+    Ex: willikins exec /tmp/my-command.js -- --other-arg=10
+
+`;
+
+export let options = [
+
+    { definition : 'command-path', required : true }
 
 ];
 
 export async function command( options ) {
 
-    var commandSet = new CommandSet( );
+    let commandSet = new CommandSet( );
 
-    var name = basename( options[ 0 ], '.js' );
-    var command = commandSet.createCommand( name );
+    let name = basename( options.commandPath, '.js' );
+    let command = commandSet.createCommand( name );
 
-    var module = await importExternal( options[ 0 ] );
+    let module = await importExternal( options.commandPath );
 
     if ( module.help )
         command.setHelp( module.help );
@@ -23,12 +36,12 @@ export async function command( options ) {
     if ( module.command )
         command.setRunner( module.command );
 
-    for ( var option of ( module.options || [ ] ) )
+    for ( let option of ( module.options || [ ] ) )
         command.addOption( option );
 
-    var argv = options.slice( 1 );
+    let argv = options.slice( 1 );
     argv.unshift( name );
 
-    await commandSet.run( argv );
+    return await commandSet.run( argv );
 
 }

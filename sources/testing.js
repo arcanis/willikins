@@ -1,4 +1,4 @@
-import { format }         from 'willikins/node/url';
+import { format }         from 'node/url';
 
 import { merge, without } from 'willikins/vendors/lodash';
 import { request, jar }   from 'willikins/vendors/request';
@@ -7,9 +7,9 @@ import { clr }            from 'willikins/vendors/clicolor';
 import { Database }       from 'willikins/db';
 import { getProfile }     from 'willikins/profile';
 
-var gTestSuite = null;
+let gTestSuite = null;
 
-var gQueryParameters = null;
+let gQueryParameters = null;
 
 function reindent( indent, string ) {
 
@@ -36,22 +36,22 @@ class TestSuite {
 
     async run( { showStack = false } = { } ) {
 
-        var name = this.name;
-        var succeed = true;
+        let name = this.name;
+        let succeed = true;
 
         // Reset the global query parameters
         gQueryParameters = { };
 
-        for ( var [ description, runner ] of this.tests ) {
+        for ( let [ description, runner ] of this.tests ) {
 
-            var error = null;
+            let error = null;
 
             await Database.drop( );
             await Database.sync( );
 
             try {
 
-                for ( var initfn of this.inits )
+                for ( let initfn of this.inits )
                     await initfn( );
 
                 await runner( );
@@ -90,7 +90,7 @@ class TestSuite {
 
 export function describe( component, builder ) {
 
-    var testSuite = new TestSuite( component );
+    let testSuite = new TestSuite( component );
 
     gTestSuite = testSuite;
     builder( );
@@ -175,7 +175,7 @@ export class RequestBag {
         if ( ! this._interceptors )
             return ;
 
-        var index = this._interceptors.indexOf( fn );
+        let index = this._interceptors.indexOf( fn );
         this._interceptors.splice( index, 1 );
 
     }
@@ -232,9 +232,9 @@ export class RequestBag {
 
     _execute( options ) {
 
-        var promise = new Promise( ( resolve, reject ) => {
+        let promise = new Promise( ( resolve, reject ) => {
 
-            for ( var interceptor of RequestBag._interceptors || [ ] )
+            for ( let interceptor of RequestBag._interceptors || [ ] )
                 interceptor( promise );
 
             this._request( options ).then( resolve, reject );
@@ -251,11 +251,11 @@ export class RequestBag {
 
             if ( response.statusCode >= 500 && response.statusCode < 600 ) {
 
-                var data = body; try { data = JSON.parse( data ); } catch ( error ) { }
-                var extraKeys = without( Object.keys( data ), 'message' );
+                let data = body; try { data = JSON.parse( data ); } catch ( error ) { }
+                let extraKeys = without( Object.keys( data ), 'message' );
 
-                var maxLength = extraKeys.reduce( ( previous, key ) => Math.max( previous, key.length ), 0 );
-                var extraData = extraKeys.map( key => `     + ${key}${' '.repeat(maxLength - key.length)}: ${JSON.stringify(data[key])}` ).join( '\n' );
+                let maxLength = extraKeys.reduce( ( previous, key ) => Math.max( previous, key.length ), 0 );
+                let extraData = extraKeys.map( key => `     + ${key}${' '.repeat(maxLength - key.length)}: ${JSON.stringify(data[key])}` ).join( '\n' );
 
                 if ( extraKeys.length )
                     extraData = '\n\n' + extraData + '\n';

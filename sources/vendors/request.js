@@ -1,6 +1,6 @@
-var actualRequest = require( __willikins_core_modules + '/request' );
+let actualRequest = require( __willikins_core_modules + '/request' );
 
-export var jar = actualRequest.jar;
+export let jar = actualRequest.jar;
 
 export function request( options ) {
 

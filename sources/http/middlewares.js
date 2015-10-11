@@ -1,9 +1,8 @@
-import { SequelizeInstance }                          from 'willikins/vendors/sequelize';
+import { express }                                    from 'willikins/vendors/express';
+import { Instance as SequelizeInstance }              from 'willikins/vendors/sequelize';
 
-import { controller }                                 from 'willikins/http/controller';
+import { wrapAsyncController }                        from 'willikins/http/controllers';
 import { UnsupportedMethod, NotFound, Unimplemented } from 'willikins/http/errors';
-
-var express = require( 'express' );
 
 export class ModelActions {
 
@@ -70,9 +69,12 @@ export function restInterface( actions ) {
 
     return express( )
 
-        .get( '/', controller( async function ( request, response ) {
+        .get( '/', wrapAsyncController( async ( request, response ) => {
 
-            var data = await actions.index( request );
+            let data = await actions.index( request );
+
+            if ( ! data.results )
+                throw new Error( `Missing required "results" property` );
 
             data.results = await Promise.all( data.results.map( model => actions.normalize( request, model ) ) );
 
@@ -80,17 +82,17 @@ export function restInterface( actions ) {
 
         }, { defaultContentType : 'application/json' } ) )
 
-        .post( '/', controller( async function ( request, response ) {
+        .post( '/', wrapAsyncController( async ( request, response ) => {
 
-            var data = await actions.create( request );
+            let data = await actions.create( request );
 
             return { status : 201, data : await actions.normalize( request, data ) };
 
         }, { defaultContentType : 'application/json' } ) )
 
-        .get( '/:id', controller( async function ( request, response ) {
+        .get( '/:id', wrapAsyncController( async ( request, response ) => {
 
-            var data = await actions.get( request, request.params.id );
+            let data = await actions.get( request, request.params.id );
 
             if ( ! data )
                 throw new NotFound( );
@@ -99,9 +101,9 @@ export function restInterface( actions ) {
 
         }, { defaultContentType : 'application/json' } ) )
 
-        .patch( '/:id', controller( async function ( request, response ) {
+        .patch( '/:id', wrapAsyncController( async ( request, response ) => {
 
-            var data = await actions.get( request, request.params.id );
+            let data = await actions.get( request, request.params.id );
 
             if ( ! data )
                 throw new NotFound( );
@@ -112,9 +114,9 @@ export function restInterface( actions ) {
 
         }, { defaultContentType : 'application/json' } ) )
 
-        .delete( '/:id', controller( async function ( request, response ) {
+        .delete( '/:id', wrapAsyncController( async ( request, response ) => {
 
-            var data = await actions.get( request, request.params.id );
+            let data = await actions.get( request, request.params.id );
 
             if ( ! data )
                 throw new NotFound( );
@@ -125,11 +127,11 @@ export function restInterface( actions ) {
 
         }, { defaultContentType : 'application/json' } ) )
 
-        .all( '/:id/:action', controller( async function ( request, response ) {
+        .all( '/:id/:action', wrapAsyncController( async ( request, response ) => {
 
-            var method = request.method.toLowerCase( );
-            var camelcase = request.params.action.replace( /(?:^|-)([a-z])/g, ( all, letter ) => letter.toUpperCase( ) );
-            var fnName = method + camelcase;
+            let method = request.method.toLowerCase( );
+            let camelcase = request.params.action.replace( /(?:^|-)([a-z])/g, ( all, letter ) => letter.toUpperCase( ) );
+            let fnName = method + camelcase;
 
             if ( [ 'get', 'post', 'patch', 'delete' ].indexOf( method ) === -1 )
                 throw new UnsupportedMethod( );
@@ -137,7 +139,7 @@ export function restInterface( actions ) {
             if ( ! fnName in actions || fnName in Object.prototype )
                 throw new NotFound( );
 
-            var model = await actions.get( request, request.params.id );
+            let model = await actions.get( request, request.params.id );
 
             if ( ! model )
                 throw new NotFound( );
@@ -150,28 +152,21 @@ export function restInterface( actions ) {
 
 }
 
-export function middleware( fn ) {
+export function wrapAsyncMiddleware( fn ) {
 
-    var wrapper = function ( ... argv ) {
+    return ( request, response, next ) => {
 
-        Promise.resolve( fn( ... argv ) ).catch( error => {
+        Promise.resolve( ).then( ( ) => {
 
-            setImmediate( ( ) => { throw error; } );
+            return fn( request, response, next );
+
+        } ).catch( error => {
+
+            next( error );
 
         } );
 
     };
 
-    switch ( fn.length ) {
-
-    case 0: return ( ) => wrapper( );
-    case 1: return ( a ) => wrapper( a );
-    case 2: return ( a, b ) => wrapper( a, b );
-    case 3: return ( a, b, c ) => wrapper( a, b, c );
-    case 4: return ( a, b, c, d ) => wrapper( a, b, c, d );
-
-    default: throw new Error( `Wrong parameter count (got ${fn.length})` );
-
-    }
 
 }

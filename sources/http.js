@@ -20,3 +20,35 @@ export class Server {
     }
 
 }
+
+export function runServer( app, ... args ) {
+
+    return new Promise( ( resolve, reject ) => {
+
+        let server = app.listen( ... args );
+
+        function onError( error ) {
+            unbind( );
+            reject( error );
+        }
+
+        function onSuccess( ) {
+            unbind( );
+            resolve( );
+        }
+
+        function bind( ) {
+            server.addListener( 'error', onError );
+            server.addListener( 'listening', onSuccess );
+        }
+
+        function unbind( ) {
+            server.removeListener( 'error', onError );
+            server.removeListener( 'listening', onSuccess );
+        }
+
+        bind( );
+
+    } );
+
+}

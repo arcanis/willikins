@@ -1,4 +1,6 @@
-var lodash = module.require( __willikins_core_modules + '/lodash' );
+let lodash = require( __willikins_core_modules + '/lodash' );
 
-export var merge = lodash.merge;
-export var without = lodash.without;
+export let camelCase = lodash.camelCase;
+
+export let merge = lodash.merge;
+export let without = lodash.without;

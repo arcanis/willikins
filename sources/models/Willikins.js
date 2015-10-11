@@ -1,4 +1,5 @@
-import { STRING } from 'willikins/db/types';
+import { STRING } from 'willikins/vendors/sequelize';
+
 import { Model }  from 'willikins/db';
 
 export class Willikins extends Model {
@@ -9,6 +10,6 @@ export class Willikins extends Model {
 
         value : { type : STRING }
 
-    } } }
+    } }; }
 
-}
+};

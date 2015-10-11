@@ -1,12 +1,12 @@
-var semver = module.require( __willikins_core_modules + '/semver' );
+let semver = require( __willikins_core_modules + '/semver' );
 
-export var compare = semver.compare;
-export var rcompare = semver.rcompare;
+export let compare = semver.compare;
+export let rcompare = semver.rcompare;
 
-export var eq = semver.eq;
-export var lt = semver.lt;
-export var gt = semver.gt;
-export var lte = semver.lte;
-export var gte = semver.gte;
+export let eq = semver.eq;
+export let lt = semver.lt;
+export let gt = semver.gt;
+export let lte = semver.lte;
+export let gte = semver.gte;
 
-export var maxSatisfying = semver.maxSatisfying;
+export let maxSatisfying = semver.maxSatisfying;

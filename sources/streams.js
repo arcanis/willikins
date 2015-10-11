@@ -1,5 +1,5 @@
-import { createWriteStream } from 'willikins/node/fs';
-import { Writable }          from 'willikins/node/stream';
+import { createWriteStream } from 'node/fs';
+import { Writable }          from 'node/stream';
 
 export class NullStream extends Writable {
 
